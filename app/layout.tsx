@@ -20,10 +20,23 @@ export default function RootLayout({
           position="top-right"
           toastOptions={{
             style: {
-              background: '#1A2E1E',
-              color: '#F0EDE6',
-              border: '1px solid #2A3D2E',
+              background: '#FFFFFF',
+              color: '#111827',
+              border: '1px solid #E5E7EB',
+              borderRadius: '12px',
+              padding: '14px 16px',
               fontSize: '14px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)',
+            },
+            success: {
+              style: {
+                borderLeft: '4px solid #16A34A',
+              },
+            },
+            error: {
+              style: {
+                borderLeft: '4px solid #EF4444',
+              },
             },
           }}
         />

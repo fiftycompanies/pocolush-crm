@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,11 +10,12 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table';
-import { useState } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { MessageSquare } from 'lucide-react';
 import TypeBadge from './TypeBadge';
 import StatusBadge from './StatusBadge';
+import EmptyState from '@/components/ui/EmptyState';
 import type { Inquiry } from '@/types';
 
 interface InquiryTableProps {
@@ -40,7 +41,7 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
         id: 'customerName',
         header: '이름',
         cell: (info) => (
-          <span className="text-text-primary font-medium">{info.getValue()}</span>
+          <span className="text-text-primary font-medium text-[14px]">{info.getValue()}</span>
         ),
         size: 120,
       }),
@@ -48,7 +49,7 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
         id: 'customerPhone',
         header: '연락처',
         cell: (info) => (
-          <span className="text-text-secondary">{info.getValue()}</span>
+          <span className="text-text-secondary text-[14px]">{info.getValue()}</span>
         ),
         size: 140,
       }),
@@ -61,14 +62,14 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
         id: 'assigneeName',
         header: '담당자',
         cell: (info) => (
-          <span className="text-text-secondary">{info.getValue()}</span>
+          <span className="text-text-secondary text-[14px]">{info.getValue()}</span>
         ),
         size: 100,
       }),
       columnHelper.accessor('created_at', {
         header: '접수일시',
         cell: (info) => (
-          <span className="text-text-muted text-xs">
+          <span className="text-text-tertiary text-[13px]">
             {format(new Date(info.getValue()), 'M/d HH:mm', { locale: ko })}
           </span>
         ),
@@ -89,16 +90,16 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
   });
 
   return (
-    <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-white border border-border rounded-2xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-border">
+              <tr key={headerGroup.id} className="border-b border-border bg-bg-page">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="text-left px-6 py-3 text-xs text-text-muted font-medium cursor-pointer hover:text-text-secondary transition-colors"
+                    className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium cursor-pointer hover:text-text-primary transition-colors h-[44px]"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -115,8 +116,12 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
           <tbody>
             {table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-16 text-center text-text-muted text-sm">
-                  해당하는 문의가 없습니다
+                <td colSpan={6}>
+                  <EmptyState
+                    icon={MessageSquare}
+                    title="해당하는 문의가 없습니다"
+                    description="필터 조건을 변경해보세요"
+                  />
                 </td>
               </tr>
             ) : (
@@ -124,10 +129,10 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
                 <tr
                   key={row.id}
                   onClick={() => onRowClick(row.original.id)}
-                  className="border-b border-border/50 hover:bg-bg-hover cursor-pointer transition-colors"
+                  className="border-b border-[#F3F4F6] hover:bg-bg-page cursor-pointer transition-colors h-[56px]"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-6 py-3 text-sm">
+                    <td key={cell.id} className="px-4 py-3 text-[14px]">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

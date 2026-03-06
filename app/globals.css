@@ -1,25 +1,47 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 @import "tailwindcss";
 
 @theme inline {
-  --color-bg-primary: #0F1A11;
-  --color-bg-secondary: #1A2E1E;
-  --color-bg-tertiary: #243D28;
-  --color-bg-sidebar: #111A13;
-  --color-bg-card: #1A2E1E;
-  --color-bg-hover: #243D28;
-  --color-bg-input: #1A2E1E;
+  /* 배경 */
+  --color-bg-page: #F9FAFB;
+  --color-bg-card: #FFFFFF;
+  --color-bg-sidebar: #FFFFFF;
+  --color-bg-hover: #F3F4F6;
+  --color-bg-input: #F9FAFB;
 
-  --color-gold: #E8A045;
-  --color-gold-dim: #E8A04530;
-  --color-forest: #1A2E1E;
-  --color-moss: #3D6B47;
-  --color-leaf: #6BA37A;
+  /* 브랜드 */
+  --color-primary: #16A34A;
+  --color-primary-light: #DCFCE7;
+  --color-primary-dark: #15803D;
 
-  --color-text-primary: #F0EDE6;
-  --color-text-secondary: #A0A09A;
-  --color-text-muted: #6B6B65;
-  --color-border: #2A3D2E;
-  --color-border-light: #344438;
+  /* 텍스트 */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-disabled: #D1D5DB;
+
+  /* 테두리 */
+  --color-border: #E5E7EB;
+  --color-border-input: #D1D5DB;
+
+  /* 상태 */
+  --color-blue: #3B82F6;
+  --color-blue-light: #EFF6FF;
+  --color-yellow: #F59E0B;
+  --color-yellow-light: #FFFBEB;
+  --color-red: #EF4444;
+  --color-red-light: #FEF2F2;
+  --color-green: #10B981;
+  --color-green-light: #ECFDF5;
+  --color-gray: #6B7280;
+  --color-gray-light: #F3F4F6;
+  --color-purple: #8B5CF6;
+  --color-purple-light: #F5F3FF;
+
+  /* 그림자 */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-base: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
 }
 
 * {
@@ -33,9 +55,9 @@ html {
 }
 
 body {
-  background: #0F1A11;
-  color: #F0EDE6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  background: #F9FAFB;
+  color: #111827;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -44,12 +66,25 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0F1A11;
+  background: #F9FAFB;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2A3D2E;
+  background: #D1D5DB;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3D6B47;
+  background: #9CA3AF;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
 }

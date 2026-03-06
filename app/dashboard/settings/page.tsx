@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
 import type { Profile } from '@/types';
 
 export default function SettingsPage() {
@@ -31,7 +33,6 @@ export default function SettingsPage() {
 
       if (profile) {
         setCurrentUser(profile);
-        // Redirect if not admin
         if (profile.role !== 'admin') {
           toast.error('관리자 권한이 필요합니다');
           router.push('/dashboard');
@@ -46,7 +47,6 @@ export default function SettingsPage() {
       if (allStaff) {
         setStaff(allStaff);
 
-        // Fetch inquiry counts per assignee
         const counts: Record<string, number> = {};
         for (const s of allStaff) {
           const { count } = await supabase
@@ -66,16 +66,13 @@ export default function SettingsPage() {
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setInviting(true);
-
-    // Note: Invite requires admin/service role key in production
-    // This is a client-side placeholder
     toast.success(`${inviteEmail}로 초대 이메일을 발송합니다. (Supabase 대시보드에서 직접 추가해주세요)`);
     setInviteEmail('');
     setInviting(false);
   };
 
   if (loading) {
-    return <div className="text-center py-20 text-text-muted">불러오는 중...</div>;
+    return <div className="text-center py-20 text-text-tertiary">불러오는 중...</div>;
   }
 
   if (!currentUser || currentUser.role !== 'admin') {
@@ -85,66 +82,68 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">설정</h1>
-        <p className="text-sm text-text-muted mt-1">직원 관리 및 시스템 설정</p>
+        <h1 className="text-[24px] font-bold text-text-primary">설정</h1>
+        <p className="text-[14px] text-text-secondary mt-1">직원 관리 및 시스템 설정</p>
       </div>
 
       {/* Invite */}
-      <div className="bg-bg-card border border-border rounded-xl p-6">
-        <h2 className="text-sm font-medium text-text-secondary mb-4">신규 직원 초대</h2>
+      <Card>
+        <h2 className="text-[14px] font-semibold text-text-primary mb-4">신규 직원 초대</h2>
         <div className="flex gap-3">
-          <input
-            type="email"
-            placeholder="이메일 주소"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            className="flex-1 bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-gold/50 transition-colors"
-          />
-          <Button onClick={handleInvite} variant="gold" disabled={inviting}>
-            {inviting ? '발송 중...' : '초대'}
+          <div className="flex-1">
+            <Input
+              type="email"
+              placeholder="이메일 주소"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <Button onClick={handleInvite} variant="primary" loading={inviting}>
+            초대
           </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Staff list */}
-      <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-white border border-border rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-sm font-medium text-text-secondary">직원 목록</h2>
+          <h2 className="text-[14px] font-semibold text-text-primary">직원 목록</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-6 py-3 text-xs text-text-muted font-medium">이름</th>
-                <th className="text-left px-6 py-3 text-xs text-text-muted font-medium">역할</th>
-                <th className="text-left px-6 py-3 text-xs text-text-muted font-medium">담당 문의수</th>
-                <th className="text-left px-6 py-3 text-xs text-text-muted font-medium">가입일</th>
+              <tr className="border-b border-border bg-bg-page">
+                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">이름</th>
+                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">역할</th>
+                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">담당 문의수</th>
+                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">가입일</th>
               </tr>
             </thead>
             <tbody>
               {staff.map((s) => (
-                <tr key={s.id} className="border-b border-border/50 hover:bg-bg-hover transition-colors">
-                  <td className="px-6 py-3 text-sm text-text-primary font-medium">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold text-sm font-medium">
+                <tr key={s.id} className="border-b border-[#F3F4F6] hover:bg-bg-page transition-colors h-[56px]">
+                  <td className="px-4 py-3 text-[14px] text-text-primary font-medium">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-[13px] font-semibold">
                         {s.name.charAt(0)}
                       </div>
                       {s.name}
                       {s.id === currentUser.id && (
-                        <span className="text-xs text-text-muted">(나)</span>
+                        <span className="text-[12px] text-text-tertiary">(나)</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-4 py-3">
                     <Badge
                       label={s.role === 'admin' ? '관리자' : '직원'}
-                      color={s.role === 'admin' ? '#E8A045' : '#6B7280'}
+                      color={s.role === 'admin' ? '#16A34A' : '#6B7280'}
+                      bg={s.role === 'admin' ? '#DCFCE7' : '#F3F4F6'}
                     />
                   </td>
-                  <td className="px-6 py-3 text-sm text-gold font-medium">
+                  <td className="px-4 py-3 text-[14px] text-primary font-semibold">
                     {inquiryCounts[s.id] || 0}
                   </td>
-                  <td className="px-6 py-3 text-sm text-text-muted">
+                  <td className="px-4 py-3 text-[14px] text-text-tertiary">
                     {new Date(s.created_at).toLocaleDateString('ko-KR')}
                   </td>
                 </tr>

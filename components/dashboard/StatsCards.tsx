@@ -1,88 +1,40 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-interface Stats {
-  todayNew: number;
-  unprocessed: number;
-  monthConverted: number;
-  total: number;
-}
+import { MessageSquare, AlertCircle, CheckCircle, MapPin } from 'lucide-react';
+import Card from '@/components/ui/Card';
+import { useDashboardStats } from '@/lib/use-data';
 
 const cards = [
-  { key: 'todayNew', label: '오늘 신규', icon: '📥', color: '#3B82F6' },
-  { key: 'unprocessed', label: '미처리', icon: '⏳', color: '#F59E0B' },
-  { key: 'monthConverted', label: '이달 계약', icon: '✅', color: '#10B981' },
-  { key: 'total', label: '누적 문의', icon: '📊', color: '#8B5CF6' },
-] as const;
+  { key: 'todayNew' as const, label: '오늘 신규', icon: MessageSquare, iconColor: '#3B82F6', iconBg: '#EFF6FF' },
+  { key: 'unprocessed' as const, label: '미처리', icon: AlertCircle, iconColor: '#EF4444', iconBg: '#FEF2F2' },
+  { key: 'monthConverted' as const, label: '이달 계약', icon: CheckCircle, iconColor: '#10B981', iconBg: '#ECFDF5' },
+  { key: 'rentedFarms' as const, label: '임대중 농장', icon: MapPin, iconColor: '#F59E0B', iconBg: '#FFFBEB' },
+];
 
 export default function StatsCards() {
-  const supabase = createClient();
-  const [stats, setStats] = useState<Stats>({
-    todayNew: 0,
-    unprocessed: 0,
-    monthConverted: 0,
-    total: 0,
-  });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-
-      const [todayRes, unprocessedRes, convertedRes, totalRes] = await Promise.all([
-        supabase
-          .from('inquiries')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', todayStr),
-        supabase
-          .from('inquiries')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'new'),
-        supabase
-          .from('inquiries')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'converted')
-          .gte('updated_at', monthStart),
-        supabase
-          .from('inquiries')
-          .select('id', { count: 'exact', head: true }),
-      ]);
-
-      setStats({
-        todayNew: todayRes.count ?? 0,
-        unprocessed: unprocessedRes.count ?? 0,
-        monthConverted: convertedRes.count ?? 0,
-        total: totalRes.count ?? 0,
-      });
-    };
-
-    fetchStats();
-  }, [supabase]);
+  const { data: stats } = useDashboardStats();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card) => (
-        <div
-          key={card.key}
-          className="bg-bg-card border border-border rounded-xl p-5 hover:border-border-light transition-colors"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-2xl">{card.icon}</span>
-            <span
-              className="text-xs font-medium px-2 py-0.5 rounded-full"
-              style={{ color: card.color, backgroundColor: `${card.color}15` }}
-            >
-              {card.label}
-            </span>
-          </div>
-          <p className="text-3xl font-bold text-text-primary">
-            {stats[card.key]}
-          </p>
-        </div>
-      ))}
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <Card key={card.key}>
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: card.iconBg }}
+              >
+                <Icon className="w-5 h-5" style={{ color: card.iconColor }} />
+              </div>
+              <span className="text-[13px] text-text-secondary">{card.label}</span>
+            </div>
+            <p className="text-[32px] font-bold text-text-primary leading-none">
+              {stats[card.key]}
+            </p>
+          </Card>
+        );
+      })}
     </div>
   );
 }

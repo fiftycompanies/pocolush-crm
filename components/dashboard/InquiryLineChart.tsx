@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -10,89 +9,55 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { createClient } from '@/lib/supabase/client';
-import { format, subDays } from 'date-fns';
-import type { DailyCount } from '@/types';
+import Card from '@/components/ui/Card';
+import { useChartData } from '@/lib/use-data';
 
 export default function InquiryLineChart() {
-  const supabase = createClient();
-  const [data, setData] = useState<DailyCount[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const days = 30;
-      const startDate = subDays(new Date(), days);
-
-      const { data: inquiries } = await supabase
-        .from('inquiries')
-        .select('created_at')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: true });
-
-      // Group by date
-      const countMap: Record<string, number> = {};
-      for (let i = 0; i <= days; i++) {
-        const date = format(subDays(new Date(), days - i), 'MM/dd');
-        countMap[date] = 0;
-      }
-
-      inquiries?.forEach((inq) => {
-        const date = format(new Date(inq.created_at), 'MM/dd');
-        if (countMap[date] !== undefined) {
-          countMap[date]++;
-        }
-      });
-
-      setData(
-        Object.entries(countMap).map(([date, count]) => ({ date, count }))
-      );
-    };
-
-    fetchData();
-  }, [supabase]);
+  const { data } = useChartData();
 
   return (
-    <div className="bg-bg-card border border-border rounded-xl p-6">
-      <h3 className="text-sm font-medium text-text-secondary mb-4">
+    <Card>
+      <h3 className="text-[16px] font-semibold text-text-primary mb-4">
         최근 30일 문의 추이
       </h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2A3D2E" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis
               dataKey="date"
-              stroke="#6B6B65"
-              fontSize={11}
+              stroke="#9CA3AF"
+              fontSize={12}
               tickLine={false}
             />
             <YAxis
-              stroke="#6B6B65"
-              fontSize={11}
+              stroke="#9CA3AF"
+              fontSize={12}
               tickLine={false}
               allowDecimals={false}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1A2E1E',
-                border: '1px solid #2A3D2E',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E5E7EB',
                 borderRadius: '8px',
                 fontSize: '13px',
-                color: '#F0EDE6',
+                color: '#111827',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.07)',
               }}
-              labelStyle={{ color: '#A0A09A' }}
+              labelStyle={{ color: '#6B7280' }}
             />
             <Line
               type="monotone"
               dataKey="count"
-              stroke="#E8A045"
+              stroke="#16A34A"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#E8A045' }}
+              activeDot={{ r: 4, fill: '#16A34A' }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -12,7 +12,7 @@ import TypeBadge from './TypeBadge';
 import StatusBadge from './StatusBadge';
 import NoteTimeline from './NoteTimeline';
 import { STATUS_OPTIONS } from '@/lib/constants';
-import type { Inquiry, InquiryNote, Profile } from '@/types';
+import type { Inquiry, InquiryNote, Profile, FarmRental } from '@/types';
 
 interface InquiryDrawerProps {
   inquiryId: string | null;
@@ -33,6 +33,7 @@ export default function InquiryDrawer({
   const [staff, setStaff] = useState<Profile[]>([]);
   const [newNote, setNewNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [rental, setRental] = useState<(FarmRental & { farm?: { number: number; name: string } }) | null>(null);
 
   useEffect(() => {
     if (!inquiryId || !isOpen) return;
@@ -52,7 +53,21 @@ export default function InquiryDrawer({
         supabase.from('profiles').select('*'),
       ]);
 
-      if (inquiryRes.data) setInquiry(inquiryRes.data);
+      if (inquiryRes.data) {
+        setInquiry(inquiryRes.data);
+        if (inquiryRes.data.type === 'jaramter_inquiry' && inquiryRes.data.customer_id) {
+          const { data: rentalData } = await supabase
+            .from('farm_rentals')
+            .select('*, farm:farms(number, name)')
+            .eq('customer_id', inquiryRes.data.customer_id)
+            .eq('status', 'active')
+            .limit(1)
+            .single();
+          setRental(rentalData || null);
+        } else {
+          setRental(null);
+        }
+      }
       if (notesRes.data) setNotes(notesRes.data);
       if (staffRes.data) setStaff(staffRes.data);
     };
@@ -69,7 +84,6 @@ export default function InquiryDrawer({
       .update({ status: newStatus })
       .eq('id', inquiry.id);
 
-    // Auto-log status change
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('inquiry_notes').insert({
       inquiry_id: inquiry.id,
@@ -81,7 +95,6 @@ export default function InquiryDrawer({
     setInquiry({ ...inquiry, status: newStatus as Inquiry['status'] });
     toast.success('상태가 변경되었습니다');
 
-    // Refresh notes
     const { data: newNotes } = await supabase
       .from('inquiry_notes')
       .select('*, author:profiles(*)')
@@ -131,7 +144,7 @@ export default function InquiryDrawer({
   if (!inquiry) {
     return (
       <Drawer isOpen={isOpen} onClose={onClose} title="문의 상세">
-        <div className="text-center py-12 text-text-muted text-sm">
+        <div className="text-center py-12 text-text-tertiary text-[14px]">
           불러오는 중...
         </div>
       </Drawer>
@@ -147,46 +160,43 @@ export default function InquiryDrawer({
             <TypeBadge type={inquiry.type} />
             <StatusBadge status={inquiry.status} />
           </div>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors">
             ✕
           </button>
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-text-primary">
+          <h2 className="text-[20px] font-bold text-text-primary">
             {inquiry.customer?.name || '이름 없음'}
           </h2>
-          <p className="text-sm text-text-muted mt-1">
+          <p className="text-[13px] text-text-tertiary mt-1">
             {format(new Date(inquiry.created_at), 'yyyy년 M월 d일 HH:mm', { locale: ko })}
           </p>
         </div>
 
         {/* Basic info */}
-        <div className="bg-bg-secondary rounded-xl p-4 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-text-muted">연락처</span>
+        <div className="space-y-3">
+          <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+            <span className="text-text-secondary">연락처</span>
             <span className="text-text-primary">{inquiry.customer?.phone || '-'}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-text-muted">접수경로</span>
+          <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+            <span className="text-text-secondary">접수경로</span>
             <span className="text-text-primary">{inquiry.source}</span>
           </div>
           {inquiry.data && Object.keys(inquiry.data).length > 0 && (
-            <div className="border-t border-border pt-3">
-              <p className="text-xs text-text-muted mb-2">추가 데이터</p>
-              {Object.entries(inquiry.data).map(([key, val]) => (
-                <div key={key} className="flex justify-between text-sm mb-1">
-                  <span className="text-text-muted">{key}</span>
-                  <span className="text-text-primary">{String(val)}</span>
-                </div>
-              ))}
-            </div>
+            Object.entries(inquiry.data).map(([key, val]) => (
+              <div key={key} className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+                <span className="text-text-secondary">{key}</span>
+                <span className="text-text-primary">{String(val)}</span>
+              </div>
+            ))
           )}
         </div>
 
         {/* Status change */}
         <div>
-          <label className="block text-sm text-text-secondary mb-2">상태 변경</label>
+          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">상태 변경</label>
           <Select
             options={STATUS_OPTIONS}
             value={inquiry.status}
@@ -197,7 +207,7 @@ export default function InquiryDrawer({
 
         {/* Assignee */}
         <div>
-          <label className="block text-sm text-text-secondary mb-2">담당자 배정</label>
+          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">담당자 배정</label>
           <Select
             options={staff.map((s) => ({ value: s.id, label: s.name }))}
             placeholder="미배정"
@@ -207,30 +217,70 @@ export default function InquiryDrawer({
           />
         </div>
 
+        {/* Rental connection for jaramter inquiries */}
+        {inquiry.type === 'jaramter_inquiry' && (
+          <div className="bg-bg-page rounded-xl p-4 border border-border">
+            <h3 className="text-[14px] font-semibold text-text-primary mb-3">자람터 임대 연결</h3>
+            {rental ? (
+              <div className="space-y-2">
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-text-secondary">농장</span>
+                  <span className="text-primary font-semibold">{rental.farm?.number}번 {rental.farm?.name}</span>
+                </div>
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-text-secondary">기간</span>
+                  <span className="text-text-primary">
+                    {format(new Date(rental.start_date), 'yy.M.d')} ~ {format(new Date(rental.end_date), 'yy.M.d')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-text-secondary">월 결제액</span>
+                  <span className="text-primary font-semibold">{rental.monthly_fee.toLocaleString()}원</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <p className="text-[13px] text-text-tertiary mb-3">연결된 임대 계약 없음</p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    onClose();
+                    window.location.href = `/dashboard/rentals/new?customerId=${inquiry.customer_id}`;
+                  }}
+                >
+                  임대 계약 등록
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Add note */}
         <div>
-          <label className="block text-sm text-text-secondary mb-2">메모 추가</label>
+          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">메모 추가</label>
           <textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             rows={3}
             placeholder="메모를 입력하세요..."
-            className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-gold/50 transition-colors resize-none"
+            className="w-full bg-bg-input border border-border-input rounded-[10px] px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all resize-none"
           />
           <Button
             onClick={handleAddNote}
-            variant="gold"
+            variant="primary"
             size="sm"
-            className="mt-2"
+            className="mt-2 w-full"
             disabled={saving || !newNote.trim()}
+            loading={saving}
           >
-            {saving ? '저장 중...' : '메모 저장'}
+            메모 저장
           </Button>
         </div>
 
         {/* Timeline */}
         <div>
-          <h3 className="text-sm font-medium text-text-secondary mb-4 border-t border-border pt-4">
+          <h3 className="text-[14px] font-semibold text-text-primary mb-4 border-t border-border pt-4">
             히스토리
           </h3>
           <NoteTimeline notes={notes} />

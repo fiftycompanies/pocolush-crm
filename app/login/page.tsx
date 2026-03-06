@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import Button from '@/components/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,61 +33,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="font-bold text-2xl text-text-primary tracking-tight">
-              POCO
+        <div className="mb-10">
+          <div className="flex items-center gap-1.5 mb-8">
+            <span className="font-bold text-[18px] text-text-primary tracking-tight">
+              POCOLUSH
             </span>
-            <span className="w-2 h-2 rounded-full bg-gold" />
-            <span className="font-bold text-2xl text-text-primary tracking-tight">
-              LUSH
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="font-bold text-[18px] text-text-primary tracking-tight">
+              CRM
             </span>
           </div>
-          <p className="text-text-muted text-sm">관리자 로그인</p>
+          <h1 className="text-[24px] font-bold text-text-primary leading-tight">
+            안녕하세요.
+          </h1>
+          <p className="text-[14px] text-text-secondary mt-2">
+            관리자 계정으로 로그인하세요.
+          </p>
         </div>
 
-        {/* Login card */}
-        <form
-          onSubmit={handleLogin}
-          className="bg-bg-card border border-border rounded-2xl p-8 space-y-5"
-        >
-          <div>
-            <label className="block text-sm text-text-secondary mb-2">이메일</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-bg-input border border-border rounded-lg px-4 py-3 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-gold/50 transition-colors"
-              placeholder="admin@pocolush.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-text-secondary mb-2">비밀번호</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-bg-input border border-border rounded-lg px-4 py-3 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-gold/50 transition-colors"
-              placeholder="••••••••"
-            />
-          </div>
+        {/* Login form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="이메일"
+            className={`w-full bg-bg-input border ${error ? 'border-red' : 'border-border'} rounded-xl px-4 py-3.5 text-[15px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all`}
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="비밀번호"
+            className={`w-full bg-bg-input border ${error ? 'border-red' : 'border-border'} rounded-xl px-4 py-3.5 text-[15px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all`}
+          />
 
           {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
+            <p className="text-red text-[13px]">{error}</p>
           )}
 
-          <Button type="submit" variant="gold" className="w-full" disabled={loading}>
-            {loading ? '로그인 중...' : '로그인'}
-          </Button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary-dark text-white font-semibold text-[16px] rounded-xl h-[52px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                로그인 중...
+              </span>
+            ) : '로그인'}
+          </button>
         </form>
 
-        <p className="text-center text-text-muted text-xs mt-6">
+        <p className="text-center text-text-tertiary text-[12px] mt-8">
           &copy; 2025 POCOLUSH. 내부 관리 시스템.
         </p>
       </div>
