@@ -12,25 +12,22 @@ interface TabsProps {
 
 export default function Tabs({ tabs, value, onChange }: TabsProps) {
   return (
-    <div className="flex gap-6 border-b border-border">
+    <div className="flex gap-0 p-[3px] bg-muted rounded-lg h-9 w-fit items-center">
       {tabs.map((tab) => (
         <button
           key={tab.value}
           onClick={() => onChange(tab.value)}
-          className={`relative pb-3 text-[14px] transition-colors cursor-pointer ${
+          className={`relative inline-flex items-center justify-center px-3 py-1 text-sm font-medium rounded-md border border-transparent transition-all cursor-pointer whitespace-nowrap ${
             value === tab.value
-              ? 'text-text-primary font-semibold'
-              : 'text-text-secondary hover:text-text-primary'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           {tab.label}
           {tab.count !== undefined && (
-            <span className={`ml-1.5 text-[12px] ${value === tab.value ? 'text-primary' : 'text-text-tertiary'}`}>
+            <span className={`ml-1.5 text-xs ${value === tab.value ? 'text-foreground' : 'text-muted-foreground'}`}>
               {tab.count}
             </span>
-          )}
-          {value === tab.value && (
-            <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
           )}
         </button>
       ))}

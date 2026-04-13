@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, ArrowUp, ArrowDown } from 'lucide-react';
 import TypeBadge from './TypeBadge';
 import StatusBadge from './StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
@@ -41,7 +41,7 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
         id: 'customerName',
         header: '이름',
         cell: (info) => (
-          <span className="text-text-primary font-medium text-[14px]">{info.getValue()}</span>
+          <span className="font-medium text-sm">{info.getValue()}</span>
         ),
         size: 120,
       }),
@@ -49,7 +49,7 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
         id: 'customerPhone',
         header: '연락처',
         cell: (info) => (
-          <span className="text-text-secondary text-[14px]">{info.getValue()}</span>
+          <span className="text-muted-foreground text-sm">{info.getValue()}</span>
         ),
         size: 140,
       }),
@@ -62,14 +62,14 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
         id: 'assigneeName',
         header: '담당자',
         cell: (info) => (
-          <span className="text-text-secondary text-[14px]">{info.getValue()}</span>
+          <span className="text-muted-foreground text-sm">{info.getValue()}</span>
         ),
         size: 100,
       }),
       columnHelper.accessor('created_at', {
         header: '접수일시',
         cell: (info) => (
-          <span className="text-text-tertiary text-[13px]">
+          <span className="text-muted-foreground text-xs">
             {format(new Date(info.getValue()), 'M/d HH:mm', { locale: ko })}
           </span>
         ),
@@ -90,30 +90,30 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
   });
 
   return (
-    <div className="bg-white border border-border rounded-2xl overflow-hidden">
+    <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-border bg-bg-page">
+              <tr key={headerGroup.id} className="border-b text-muted-foreground">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium cursor-pointer hover:text-text-primary transition-colors h-[44px]"
+                    className="text-left px-6 py-2 font-medium cursor-pointer hover:text-foreground transition-all"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-1">
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() === 'asc' && '↑'}
-                      {header.column.getIsSorted() === 'desc' && '↓'}
+                      {header.column.getIsSorted() === 'asc' && <ArrowUp className="size-3" />}
+                      {header.column.getIsSorted() === 'desc' && <ArrowDown className="size-3" />}
                     </div>
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/40">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={6}>
@@ -129,10 +129,10 @@ export default function InquiryTable({ data, onRowClick }: InquiryTableProps) {
                 <tr
                   key={row.id}
                   onClick={() => onRowClick(row.original.id)}
-                  className="border-b border-[#F3F4F6] hover:bg-bg-page cursor-pointer transition-colors h-[56px]"
+                  className="hover:bg-muted/20 cursor-pointer transition-all"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-[14px]">
+                    <td key={cell.id} className="px-6 py-2">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

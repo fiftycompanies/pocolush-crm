@@ -5,12 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TypeBadge from '@/components/inquiries/TypeBadge';
 import StatusBadge from '@/components/inquiries/StatusBadge';
 import NoteTimeline from '@/components/inquiries/NoteTimeline';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { STATUS_OPTIONS } from '@/lib/constants';
 import type { Inquiry, InquiryNote, Profile } from '@/types';
 
@@ -87,71 +89,68 @@ export default function InquiryDetailPage() {
   };
 
   if (!inquiry) {
-    return (
-      <div className="text-center py-20 text-text-muted">불러오는 중...</div>
-    );
+    return <div className="text-center py-20 text-text-tertiary">불러오는 중...</div>;
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-5">
       <button
         onClick={() => router.back()}
-        className="text-sm text-text-muted hover:text-text-primary transition-colors"
+        className="flex items-center gap-1 text-[13px] text-text-secondary hover:text-text-primary transition-colors duration-150 cursor-pointer"
       >
-        ← 목록으로
+        <ChevronLeft className="w-4 h-4" />
+        목록으로
       </button>
 
       {/* Header */}
-      <div className="bg-bg-card border border-border rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4">
+      <Card>
+        <div className="flex items-center gap-2.5 mb-3">
           <TypeBadge type={inquiry.type} />
           <StatusBadge status={inquiry.status} />
         </div>
-        <h1 className="text-2xl font-bold text-text-primary mb-1">
+        <h1 className="text-[20px] font-bold text-text-primary tracking-tight">
           {inquiry.customer?.name || '이름 없음'}
         </h1>
-        <p className="text-sm text-text-muted">
+        <p className="text-[14px] text-text-secondary mt-0.5">
           {format(new Date(inquiry.created_at), 'yyyy년 M월 d일 HH:mm', { locale: ko })} 접수
         </p>
-      </div>
+      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Info */}
-        <div className="bg-bg-card border border-border rounded-xl p-6 space-y-4">
-          <h2 className="text-sm font-medium text-text-secondary mb-2">기본 정보</h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-text-muted">연락처</span>
-              <span className="text-text-primary">{inquiry.customer?.phone || '-'}</span>
+        <Card>
+          <h2 className="text-[14px] font-semibold text-text-primary mb-4">기본 정보</h2>
+          <div className="bg-bg-muted rounded-xl p-4 space-y-0">
+            <div className="flex justify-between text-[14px] py-2.5 border-b border-border-light">
+              <span className="text-text-secondary">연락처</span>
+              <span className="text-text-primary font-medium">{inquiry.customer?.phone || '-'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">접수경로</span>
-              <span className="text-text-primary">{inquiry.source}</span>
+            <div className="flex justify-between text-[14px] py-2.5 border-b border-border-light last:border-b-0">
+              <span className="text-text-secondary">접수경로</span>
+              <span className="text-text-primary font-medium">{inquiry.source}</span>
             </div>
             {inquiry.data && Object.entries(inquiry.data).map(([k, v]) => (
-              <div key={k} className="flex justify-between">
-                <span className="text-text-muted">{k}</span>
-                <span className="text-text-primary">{String(v)}</span>
+              <div key={k} className="flex justify-between text-[14px] py-2.5 border-b border-border-light last:border-b-0">
+                <span className="text-text-secondary">{k}</span>
+                <span className="text-text-primary font-medium">{String(v)}</span>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Actions */}
-        <div className="bg-bg-card border border-border rounded-xl p-6 space-y-4">
-          <h2 className="text-sm font-medium text-text-secondary mb-2">관리</h2>
-          <div>
-            <label className="block text-xs text-text-muted mb-1">상태</label>
+        <Card>
+          <h2 className="text-[14px] font-semibold text-text-primary mb-4">관리</h2>
+          <div className="space-y-4">
             <Select
+              label="상태"
               options={STATUS_OPTIONS}
               value={inquiry.status}
               onChange={(e) => handleStatusChange(e.target.value)}
               className="w-full"
             />
-          </div>
-          <div>
-            <label className="block text-xs text-text-muted mb-1">담당자</label>
             <Select
+              label="담당자"
               options={staff.map((s) => ({ value: s.id, label: s.name }))}
               placeholder="미배정"
               value={inquiry.assignee_id || ''}
@@ -159,29 +158,29 @@ export default function InquiryDetailPage() {
               className="w-full"
             />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Note form */}
-      <div className="bg-bg-card border border-border rounded-xl p-6">
-        <h2 className="text-sm font-medium text-text-secondary mb-3">메모 추가</h2>
+      <Card>
+        <h2 className="text-[14px] font-semibold text-text-primary mb-3">메모 추가</h2>
         <textarea
           value={newNote}
           onChange={(e) => setNewNote(e.target.value)}
           rows={3}
           placeholder="메모를 입력하세요..."
-          className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-gold/50 transition-colors resize-none mb-3"
+          className="w-full bg-bg-input border border-border rounded-xl px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-150 resize-none mb-3"
         />
-        <Button onClick={handleAddNote} variant="gold" size="sm" disabled={saving || !newNote.trim()}>
-          {saving ? '저장 중...' : '메모 저장'}
+        <Button onClick={handleAddNote} variant="primary" size="sm" disabled={saving || !newNote.trim()} loading={saving}>
+          메모 저장
         </Button>
-      </div>
+      </Card>
 
       {/* Timeline */}
-      <div className="bg-bg-card border border-border rounded-xl p-6">
-        <h2 className="text-sm font-medium text-text-secondary mb-4">히스토리</h2>
+      <Card>
+        <h2 className="text-[14px] font-semibold text-text-primary mb-4">히스토리</h2>
         <NoteTimeline notes={notes} />
-      </div>
+      </Card>
     </div>
   );
 }

@@ -21,21 +21,21 @@ export default function RootLayout({
           toastOptions={{
             style: {
               background: '#FFFFFF',
-              color: '#111827',
-              border: '1px solid #E5E7EB',
-              borderRadius: '12px',
-              padding: '14px 16px',
-              fontSize: '14px',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)',
+              color: '#0F172A',
+              border: '1px solid #E2E8F0',
+              borderRadius: '14px',
+              padding: '12px 16px',
+              fontSize: '13px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
             },
             success: {
               style: {
-                borderLeft: '4px solid #16A34A',
+                borderLeft: '3px solid #16A34A',
               },
             },
             error: {
               style: {
-                borderLeft: '4px solid #EF4444',
+                borderLeft: '3px solid #EF4444',
               },
             },
           }}

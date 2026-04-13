@@ -83,10 +83,10 @@ export default function RentalDetailPage() {
   const statusMeta = RENTAL_STATUS[rental.status] || RENTAL_STATUS.active;
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-5">
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1 text-[13px] text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+        className="flex items-center gap-1 text-[13px] text-text-secondary hover:text-text-primary transition-colors duration-150 cursor-pointer"
       >
         <ChevronLeft className="w-4 h-4" />
         목록으로
@@ -94,8 +94,8 @@ export default function RentalDetailPage() {
 
       {/* Header */}
       <Card>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-[20px] font-bold text-primary">{rental.farm?.number}번 농장</span>
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className="text-[20px] font-bold text-primary tracking-tight">{rental.farm?.number}번 농장</span>
           <Badge label={statusMeta.label} color={statusMeta.color} bg={statusMeta.bg} />
           {rental.status === 'active' && (
             <Badge
@@ -105,37 +105,37 @@ export default function RentalDetailPage() {
             />
           )}
         </div>
-        <h1 className="text-[20px] font-bold text-text-primary">{rental.customer?.name}</h1>
-        <p className="text-[14px] text-text-secondary mt-1">{rental.customer?.phone}</p>
+        <h1 className="text-[20px] font-bold text-text-primary tracking-tight">{rental.customer?.name}</h1>
+        <p className="text-[14px] text-text-secondary mt-0.5">{rental.customer?.phone}</p>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Contract info */}
         <Card>
           <h2 className="text-[14px] font-semibold text-text-primary mb-4">계약 정보</h2>
-          <div className="space-y-3">
+          <div className="bg-bg-muted rounded-xl p-4 space-y-0">
             {[
               ['농장', `${rental.farm?.name} (${rental.farm?.area_pyeong}평)`],
               ['플랜', rental.plan || '-'],
               ['기간', `${format(new Date(rental.start_date), 'yyyy.M.d', { locale: ko })} ~ ${format(new Date(rental.end_date), 'yyyy.M.d', { locale: ko })}`],
               ['결제 수단', rental.payment_method],
             ].map(([label, value]) => (
-              <div key={label} className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+              <div key={label} className="flex justify-between text-[14px] py-2.5 border-b border-border-light last:border-b-0">
                 <span className="text-text-secondary">{label}</span>
-                <span className="text-text-primary">{value}</span>
+                <span className="text-text-primary font-medium">{value}</span>
               </div>
             ))}
-            <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+            <div className="flex justify-between text-[14px] py-2.5">
               <span className="text-text-secondary">월 결제액</span>
               <span className="text-primary font-bold">{rental.monthly_fee.toLocaleString()}원</span>
             </div>
-            {rental.notes && (
-              <div className="pt-2">
-                <span className="text-[12px] text-text-tertiary">메모</span>
-                <p className="text-[14px] text-text-primary mt-1">{rental.notes}</p>
-              </div>
-            )}
           </div>
+          {rental.notes && (
+            <div className="mt-3 bg-bg-muted rounded-xl p-4">
+              <span className="text-[12px] text-text-tertiary font-medium">메모</span>
+              <p className="text-[14px] text-text-primary mt-1">{rental.notes}</p>
+            </div>
+          )}
         </Card>
 
         {/* Actions */}
@@ -176,7 +176,7 @@ export default function RentalDetailPage() {
           onChange={(e) => setNewNote(e.target.value)}
           rows={3}
           placeholder="메모를 입력하세요..."
-          className="w-full bg-bg-input border border-border-input rounded-[10px] px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all resize-none mb-3"
+          className="w-full bg-bg-input border border-border rounded-xl px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-150 resize-none mb-3"
         />
         <Button onClick={handleAddNote} variant="primary" size="sm" disabled={!newNote.trim()}>
           메모 저장
@@ -186,15 +186,15 @@ export default function RentalDetailPage() {
           <div className="mt-4 pt-4 border-t border-border space-y-3">
             {notes.map((n) => (
               <div key={n.id} className="flex gap-3">
-                <div className="w-2 h-2 rounded-full bg-blue mt-2 shrink-0" />
+                <div className="w-2.5 h-2.5 rounded-full bg-blue mt-1.5 shrink-0 ring-2 ring-white" />
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[14px] font-medium text-text-primary">{n.author?.name || '시스템'}</span>
-                    <span className="text-[12px] text-text-tertiary">
+                    <span className="text-[13px] font-semibold text-text-primary">{n.author?.name || '시스템'}</span>
+                    <span className="text-[11px] text-text-tertiary">
                       {format(new Date(n.created_at), 'M월 d일 HH:mm', { locale: ko })}
                     </span>
                   </div>
-                  <p className="text-[14px] text-text-secondary mt-0.5">{n.content}</p>
+                  <p className="text-[13px] text-text-secondary mt-0.5">{n.content}</p>
                 </div>
               </div>
             ))}

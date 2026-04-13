@@ -6,6 +6,7 @@ import InquiryTable from '@/components/inquiries/InquiryTable';
 import InquiryFilters from '@/components/inquiries/InquiryFilters';
 import InquiryDrawer from '@/components/inquiries/InquiryDrawer';
 import { useInquiries } from '@/lib/use-data';
+import ExportButton from '@/components/ui/ExportButton';
 
 export default function InquiriesPage() {
   const searchParams = useSearchParams();
@@ -38,8 +39,11 @@ export default function InquiriesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-[24px] font-bold text-text-primary">문의 관리</h1>
-        <span className="text-[13px] text-text-secondary">총 {inquiries.length}건</span>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">문의 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">총 {inquiries.length}건</p>
+        </div>
+        <ExportButton target="inquiries" params={{ type: typeFilter, status: statusFilter, search }} />
       </div>
 
       <InquiryFilters

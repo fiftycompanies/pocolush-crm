@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Notification } from '@/types';
 
@@ -91,32 +91,32 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-[60px] border-b border-border bg-white flex items-center justify-between px-8">
+    <div className="flex items-center justify-between w-full">
       <div />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Notification bell */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors"
+            className="relative size-9 flex items-center justify-center rounded-md hover:bg-accent transition-all"
           >
-            <Bell className="w-[18px] h-[18px] text-text-secondary" />
+            <Bell className="size-4 text-muted-foreground" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+              <span className="absolute top-1 right-1 size-4 bg-destructive text-white text-[10px] rounded-full flex items-center justify-center font-semibold">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {showDropdown && (
-            <div className="absolute right-0 top-10 w-80 bg-white border border-border rounded-xl shadow-[0_4px_6px_rgba(0,0,0,0.07),0_2px_4px_rgba(0,0,0,0.06)] overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-border">
-                <span className="text-[14px] font-semibold text-text-primary">알림</span>
+            <div className="absolute right-0 top-[44px] w-80 bg-popover text-popover-foreground rounded-md border shadow-md overflow-hidden z-50">
+              <div className="px-4 py-3 border-b">
+                <span className="text-sm font-semibold">알림</span>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-text-tertiary text-[13px]">
+                  <div className="px-4 py-10 text-center text-muted-foreground text-sm">
                     알림이 없습니다
                   </div>
                 ) : (
@@ -124,14 +124,14 @@ export default function TopBar() {
                     <button
                       key={notif.id}
                       onClick={() => markAsRead(notif)}
-                      className={`w-full text-left px-4 py-3 hover:bg-bg-hover transition-colors border-b border-[#F3F4F6] ${
-                        !notif.is_read ? 'bg-primary-light/30' : ''
+                      className={`w-full text-left px-4 py-3 hover:bg-accent transition-all border-b border-border/40 ${
+                        !notif.is_read ? 'bg-accent/50' : ''
                       }`}
                     >
-                      <p className="text-[13px] text-text-primary line-clamp-2">
+                      <p className="text-sm text-foreground leading-relaxed line-clamp-2">
                         {notif.message}
                       </p>
-                      <p className="text-[12px] text-text-tertiary mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {format(new Date(notif.created_at), 'M월 d일 HH:mm', { locale: ko })}
                       </p>
                     </button>
@@ -142,22 +142,26 @@ export default function TopBar() {
           )}
         </div>
 
+        {/* Separator */}
+        <div className="w-px h-4 bg-border mx-1" />
+
         {/* User */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-border">
-          <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-[13px] font-semibold">
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold">
             {userName?.charAt(0) || 'U'}
           </div>
-          <span className="text-[14px] text-text-primary font-medium hidden sm:block">
+          <span className="text-sm text-foreground font-medium hidden sm:block">
             {userName || '사용자'}
           </span>
           <button
             onClick={handleLogout}
-            className="text-[13px] text-text-secondary hover:text-text-primary transition-colors"
+            className="size-8 flex items-center justify-center rounded-md hover:bg-accent transition-all text-muted-foreground hover:text-foreground"
+            title="로그아웃"
           >
-            로그아웃
+            <LogOut className="size-4" />
           </button>
         </div>
       </div>
-    </header>
+    </div>
   );
 }

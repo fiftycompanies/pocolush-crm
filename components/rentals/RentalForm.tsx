@@ -130,10 +130,8 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
     ? customers.filter(c => c.name.includes(customerSearch) || c.phone.includes(customerSearch))
     : customers;
 
-  const inputClass = 'w-full bg-bg-input border border-border-input rounded-[10px] px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all';
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
       {/* Farm select */}
       <Card>
         <h3 className="text-[14px] font-semibold text-text-primary mb-4">농장 선택</h3>
@@ -153,7 +151,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
           <button
             type="button"
             onClick={() => setNewCustomer(!newCustomer)}
-            className="text-[13px] text-primary hover:text-primary-dark transition-colors cursor-pointer"
+            className="text-[13px] text-primary hover:text-primary-dark transition-colors duration-150 cursor-pointer font-medium"
           >
             {newCustomer ? '기존 고객 검색' : '+ 신규 고객'}
           </button>
@@ -167,7 +165,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
         ) : (
           <div className="space-y-3">
             <Input
-              placeholder="이름·연락처 검색..."
+              placeholder="이름 / 연락처 검색..."
               value={customerSearch}
               onChange={(e) => setCustomerSearch(e.target.value)}
             />
@@ -195,7 +193,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
               key={m}
               type="button"
               onClick={() => handleQuickPeriod(m)}
-              className="px-3 py-1.5 bg-bg-page border border-border rounded-lg text-[13px] text-text-secondary hover:text-primary hover:border-primary/30 transition-colors cursor-pointer"
+              className="px-3.5 py-2 bg-bg-muted rounded-lg text-[13px] font-medium text-text-secondary hover:text-primary hover:bg-primary/5 transition-all duration-150 cursor-pointer"
             >
               {m}개월
             </button>
@@ -208,21 +206,21 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
         <h3 className="text-[14px] font-semibold text-text-primary mb-4">플랜 & 결제</h3>
 
         <div className="mb-4">
-          <label className="block text-[13px] font-medium text-[#374151] mb-2">플랜 선택</label>
+          <label className="block text-[13px] font-medium text-text-secondary mb-2">플랜 선택</label>
           <div className="flex gap-2">
             {Object.entries(RENTAL_PLANS).map(([name, info]) => (
               <button
                 key={name}
                 type="button"
                 onClick={() => handlePlanSelect(name)}
-                className={`flex-1 p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                className={`flex-1 p-3.5 rounded-xl border text-center transition-all duration-150 cursor-pointer ${
                   form.plan === name
-                    ? 'border-primary bg-primary-light text-primary'
-                    : 'border-border bg-bg-page text-text-secondary hover:border-border-input'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-bg-muted text-text-secondary hover:border-text-tertiary'
                 }`}
               >
-                <p className="text-[14px] font-medium">{name}</p>
-                <p className="text-[12px] mt-0.5">{info.area} · {info.fee.toLocaleString()}원</p>
+                <p className="text-[14px] font-semibold">{name}</p>
+                <p className="text-[12px] mt-0.5 opacity-80">{info.area} · {info.fee.toLocaleString()}원</p>
               </button>
             ))}
           </div>
@@ -237,17 +235,17 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
         />
 
         <div className="mt-4">
-          <label className="block text-[13px] font-medium text-[#374151] mb-2">결제 수단</label>
+          <label className="block text-[13px] font-medium text-text-secondary mb-2">결제 수단</label>
           <div className="flex gap-2">
             {PAYMENT_METHODS.map((method) => (
               <button
                 key={method}
                 type="button"
                 onClick={() => setForm({ ...form, payment_method: method })}
-                className={`px-4 py-2.5 rounded-[10px] border text-[14px] transition-all cursor-pointer ${
+                className={`px-4 py-2.5 rounded-xl border text-[14px] font-medium transition-all duration-150 cursor-pointer ${
                   form.payment_method === method
-                    ? 'border-primary bg-primary-light text-primary'
-                    : 'border-border bg-bg-page text-text-secondary'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-bg-muted text-text-secondary'
                 }`}
               >
                 {method}
@@ -273,13 +271,13 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
 
       {/* Notes */}
       <Card>
-        <label className="block text-[13px] font-medium text-[#374151] mb-1.5">메모</label>
+        <label className="block text-[13px] font-medium text-text-secondary mb-1.5">메모</label>
         <textarea
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
           rows={3}
           placeholder="메모를 입력하세요..."
-          className={`${inputClass} resize-none`}
+          className="w-full bg-bg-input border border-border rounded-xl px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-150 resize-none"
         />
       </Card>
 

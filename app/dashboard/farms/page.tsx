@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { FARM_STATUS } from '@/lib/constants';
 import { useFarms } from '@/lib/use-data';
+import ExportButton from '@/components/ui/ExportButton';
 import type { Farm } from '@/types';
 
 export default function FarmsPage() {
@@ -28,31 +29,34 @@ export default function FarmsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-bold text-text-primary">농장 관리</h1>
-          <p className="text-[14px] text-text-secondary mt-1">전체 {farms.length}개 농장</p>
+          <h1 className="text-2xl font-bold tracking-tight">농장 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">전체 {farms.length}개 농장</p>
         </div>
-        <Button onClick={() => setAddModalOpen(true)} variant="primary">
-          + 농장 추가
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton target="farms" />
+          <Button onClick={() => setAddModalOpen(true)} variant="primary">
+            + 농장 추가
+          </Button>
+        </div>
       </div>
 
       <FarmMap farms={farms} onFarmClick={handleFarmClick} />
 
-      <div className="bg-white border border-border rounded-2xl overflow-hidden">
+      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-bg-page">
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">번호</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">이름</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">면적(평)</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">면적(m²)</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">상태</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">임차인</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">만료일</th>
+              <tr className="border-b text-muted-foreground">
+                <th className="text-left px-6 py-2 font-medium">번호</th>
+                <th className="text-left px-6 py-2 font-medium">이름</th>
+                <th className="text-left px-6 py-2 font-medium">면적(평)</th>
+                <th className="text-left px-6 py-2 font-medium">면적(m²)</th>
+                <th className="text-left px-6 py-2 font-medium">상태</th>
+                <th className="text-left px-6 py-2 font-medium">임차인</th>
+                <th className="text-left px-6 py-2 font-medium">만료일</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border/40">
               {farms.map((farm) => {
                 const statusMeta = FARM_STATUS[farm.status] || FARM_STATUS.available;
                 const rental = farm.current_rental;
@@ -60,19 +64,19 @@ export default function FarmsPage() {
                   <tr
                     key={farm.id}
                     onClick={() => handleFarmClick(farm)}
-                    className="border-b border-[#F3F4F6] hover:bg-bg-page cursor-pointer transition-colors h-[56px]"
+                    className="hover:bg-muted/20 cursor-pointer transition-all"
                   >
-                    <td className="px-4 py-3 text-[14px] text-primary font-bold">{farm.number}</td>
-                    <td className="px-4 py-3 text-[14px] text-text-primary">{farm.name}</td>
-                    <td className="px-4 py-3 text-[14px] text-text-secondary">{farm.area_pyeong}</td>
-                    <td className="px-4 py-3 text-[14px] text-text-secondary">{farm.area_sqm}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-2 font-medium">{farm.number}</td>
+                    <td className="px-6 py-2">{farm.name}</td>
+                    <td className="px-6 py-2 text-muted-foreground">{farm.area_pyeong}</td>
+                    <td className="px-6 py-2 text-muted-foreground">{farm.area_sqm}</td>
+                    <td className="px-6 py-2">
                       <Badge label={statusMeta.label} color={statusMeta.color} bg={statusMeta.bg} />
                     </td>
-                    <td className="px-4 py-3 text-[14px] text-text-primary">
+                    <td className="px-6 py-2">
                       {rental?.customer?.name || '-'}
                     </td>
-                    <td className="px-4 py-3 text-[14px] text-text-tertiary">
+                    <td className="px-6 py-2 text-muted-foreground">
                       {rental ? format(new Date(rental.end_date), 'yy.M.d') : '-'}
                     </td>
                   </tr>

@@ -61,10 +61,10 @@ export default function CustomerDetailPage() {
   ];
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-5">
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1 text-[13px] text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+        className="flex items-center gap-1 text-[13px] text-text-secondary hover:text-text-primary transition-colors duration-150 cursor-pointer"
       >
         <ChevronLeft className="w-4 h-4" />
         목록으로
@@ -73,13 +73,13 @@ export default function CustomerDetailPage() {
       {/* Customer card */}
       <Card>
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-primary-light flex items-center justify-center text-primary text-[20px] font-bold">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-[20px] font-bold">
             {customer.name.charAt(0)}
           </div>
           <div>
-            <h1 className="text-[20px] font-bold text-text-primary">{customer.name}</h1>
+            <h1 className="text-[20px] font-bold text-text-primary tracking-tight">{customer.name}</h1>
             <p className="text-[14px] text-text-secondary">{customer.phone}</p>
-            <p className="text-[12px] text-text-tertiary mt-1">
+            <p className="text-[12px] text-text-tertiary mt-0.5">
               가입일: {format(new Date(customer.created_at), 'yyyy년 M월 d일', { locale: ko })}
             </p>
           </div>
@@ -91,15 +91,15 @@ export default function CustomerDetailPage() {
 
       {/* Inquiry history */}
       {tab === 'inquiries' && (
-        <div className="bg-white border border-border rounded-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xs border border-border/60 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border bg-bg-page">
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">유형</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">상태</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">담당자</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">접수일</th>
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">유형</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">상태</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">담당자</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">접수일</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,18 +114,18 @@ export default function CustomerDetailPage() {
                     <tr
                       key={inq.id}
                       onClick={() => router.push(`/dashboard/inquiries?open=${inq.id}`)}
-                      className="border-b border-[#F3F4F6] hover:bg-bg-page cursor-pointer transition-colors h-[56px]"
+                      className="border-b border-border-light hover:bg-bg-hover cursor-pointer transition-colors duration-150"
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <TypeBadge type={inq.type} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <StatusBadge status={inq.status} />
                       </td>
-                      <td className="px-4 py-3 text-[14px] text-text-secondary">
+                      <td className="px-5 py-3.5 text-[14px] text-text-secondary">
                         {inq.assignee?.name || '-'}
                       </td>
-                      <td className="px-4 py-3 text-[13px] text-text-tertiary">
+                      <td className="px-5 py-3.5 text-[13px] text-text-tertiary">
                         {format(new Date(inq.created_at), 'yyyy.M.d HH:mm', { locale: ko })}
                       </td>
                     </tr>
@@ -139,16 +139,16 @@ export default function CustomerDetailPage() {
 
       {/* Rental history */}
       {tab === 'rentals' && (
-        <div className="bg-white border border-border rounded-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xs border border-border/60 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border bg-bg-page">
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">농장</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">기간</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">월 결제액</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">결제</th>
-                  <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">상태</th>
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">농장</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">기간</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">월 결제액</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">결제</th>
+                  <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">상태</th>
                 </tr>
               </thead>
               <tbody>
@@ -166,21 +166,21 @@ export default function CustomerDetailPage() {
                       <tr
                         key={r.id}
                         onClick={() => router.push(`/dashboard/rentals/${r.id}`)}
-                        className="border-b border-[#F3F4F6] hover:bg-bg-page cursor-pointer transition-colors h-[56px]"
+                        className="border-b border-border-light hover:bg-bg-hover cursor-pointer transition-colors duration-150"
                       >
-                        <td className="px-4 py-3 text-[14px] text-primary font-bold">{r.farm?.number}번 {r.farm?.name}</td>
-                        <td className="px-4 py-3 text-[14px] text-text-tertiary">
+                        <td className="px-5 py-3.5 text-[14px] text-primary font-bold">{r.farm?.number}번 {r.farm?.name}</td>
+                        <td className="px-5 py-3.5 text-[14px] text-text-tertiary">
                           {format(new Date(r.start_date), 'yy.M.d')} ~ {format(new Date(r.end_date), 'yy.M.d')}
                         </td>
-                        <td className="px-4 py-3 text-[14px] text-primary font-semibold">{r.monthly_fee.toLocaleString()}원</td>
-                        <td className="px-4 py-3">
+                        <td className="px-5 py-3.5 text-[14px] text-primary font-semibold">{r.monthly_fee.toLocaleString()}원</td>
+                        <td className="px-5 py-3.5">
                           <Badge
                             label={`${r.payment_method} · ${r.payment_status}`}
                             color={payMeta?.color || '#6B7280'}
                             bg={payMeta?.bg}
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-5 py-3.5">
                           <Badge label={statusMeta.label} color={statusMeta.color} bg={statusMeta.bg} />
                         </td>
                       </tr>

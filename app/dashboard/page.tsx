@@ -9,14 +9,17 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[24px] font-bold text-text-primary">대시보드</h1>
-        <p className="text-[14px] text-text-secondary mt-1">포코러쉬 문의 현황을 한눈에 확인하세요</p>
+        <h1 className="text-2xl font-bold tracking-tight">대시보드</h1>
+        <p className="text-sm text-muted-foreground mt-1">포코러쉬 문의 현황을 한눈에 확인하세요</p>
       </div>
 
       <StatsCards />
       <ExpiringRentals />
-      <InquiryLineChart />
-      <RecentInquiries />
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <InquiryLineChart />
+        <RecentInquiries />
+      </div>
     </div>
   );
 }

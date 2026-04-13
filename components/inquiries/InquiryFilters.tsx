@@ -39,13 +39,13 @@ export default function InquiryFilters({
           className="w-40"
         />
         <div className="relative ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="이름·연락처 검색..."
+            placeholder="이름 / 연락처 검색..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-bg-input border border-border-input rounded-[10px] pl-9 pr-3.5 py-2.5 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all w-56"
+            className="border border-input rounded-md bg-transparent pl-9 pr-3 py-1 h-9 text-sm text-foreground placeholder:text-muted-foreground shadow-xs transition-all outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] w-56"
           />
         </div>
       </div>

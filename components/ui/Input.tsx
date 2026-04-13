@@ -11,15 +11,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div>
         {label && (
-          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">{label}</label>
+          <label className="block text-sm font-medium text-foreground mb-1.5">{label}</label>
         )}
         <input
           ref={ref}
-          className={`w-full bg-bg-input border ${error ? 'border-red shadow-[0_0_0_3px_#FEE2E2]' : 'border-border-input'} rounded-[10px] px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all ${className}`}
+          className={`w-full min-w-0 border ${error ? 'border-destructive ring-2 ring-destructive/20' : 'border-input'} rounded-md bg-transparent px-3 py-1 h-9 text-sm text-foreground placeholder:text-muted-foreground shadow-xs transition-all outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 ${className}`}
           {...props}
         />
-        {error && <p className="mt-1.5 text-[12px] text-red">{error}</p>}
-        {hint && !error && <p className="mt-1.5 text-[12px] text-text-tertiary">{hint}</p>}
+        {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+        {hint && !error && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
       </div>
     );
   }

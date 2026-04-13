@@ -17,43 +17,49 @@ export default function InquiryLineChart() {
 
   return (
     <Card>
-      <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-        최근 30일 문의 추이
-      </h3>
-      <div className="h-64">
+      <div className="px-6">
+        <h3 className="text-sm font-semibold leading-none">
+          최근 30일 문의 추이
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1">일별 문의 접수 건수</p>
+      </div>
+      <div className="px-6 h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0 0)" vertical={false} />
             <XAxis
               dataKey="date"
-              stroke="#9CA3AF"
+              stroke="oklch(0.65 0 0)"
               fontSize={12}
               tickLine={false}
+              axisLine={false}
             />
             <YAxis
-              stroke="#9CA3AF"
+              stroke="oklch(0.65 0 0)"
               fontSize={12}
               tickLine={false}
+              axisLine={false}
               allowDecimals={false}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
+                backgroundColor: 'oklch(1 0 0)',
+                border: '1px solid oklch(0.92 0 0)',
+                borderRadius: '6px',
                 fontSize: '13px',
-                color: '#111827',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.07)',
+                color: 'oklch(0.145 0 0)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                padding: '8px 12px',
               }}
-              labelStyle={{ color: '#6B7280' }}
+              labelStyle={{ color: 'oklch(0.556 0 0)', marginBottom: 4 }}
             />
             <Line
               type="monotone"
               dataKey="count"
-              stroke="#16A34A"
+              stroke="oklch(0.646 0.222 41.116)"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#16A34A' }}
+              activeDot={{ r: 4, fill: 'oklch(0.646 0.222 41.116)', stroke: '#fff', strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>

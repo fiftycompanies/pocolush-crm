@@ -74,11 +74,11 @@ export default function FarmDrawer({ farm, isOpen, onClose, onUpdate }: FarmDraw
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-[20px] font-bold text-text-primary">{farm.number}번 농장</span>
+          <div className="flex items-center gap-2.5">
+            <span className="text-[20px] font-bold text-text-primary tracking-tight">{farm.number}번 농장</span>
             <Badge label={statusMeta.label} color={statusMeta.color} bg={statusMeta.bg} />
           </div>
-          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors">
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary w-8 h-8 flex items-center justify-center rounded-xl hover:bg-bg-hover transition-colors duration-150">
             ✕
           </button>
         </div>
@@ -96,13 +96,15 @@ export default function FarmDrawer({ farm, isOpen, onClose, onUpdate }: FarmDraw
             </div>
           ) : (
             <>
-              <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
-                <span className="text-text-secondary">농장명</span>
-                <span className="text-text-primary">{farm.name}</span>
-              </div>
-              <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
-                <span className="text-text-secondary">면적</span>
-                <span className="text-text-primary">{farm.area_pyeong}평 ({farm.area_sqm}m²)</span>
+              <div className="bg-bg-muted rounded-xl p-4 space-y-0">
+                <div className="flex justify-between text-[14px] py-2.5 border-b border-border-light">
+                  <span className="text-text-secondary">농장명</span>
+                  <span className="text-text-primary font-medium">{farm.name}</span>
+                </div>
+                <div className="flex justify-between text-[14px] py-2.5">
+                  <span className="text-text-secondary">면적</span>
+                  <span className="text-text-primary font-medium">{farm.area_pyeong}평 ({farm.area_sqm}m²)</span>
+                </div>
               </div>
               <Select
                 label="상태"
@@ -115,7 +117,7 @@ export default function FarmDrawer({ farm, isOpen, onClose, onUpdate }: FarmDraw
                 onChange={(e) => handleStatusChange(e.target.value)}
                 className="w-full"
               />
-              <Button onClick={() => setEditing(true)} variant="secondary" size="sm" className="w-full mt-2">
+              <Button onClick={() => setEditing(true)} variant="secondary" size="sm" className="w-full">
                 정보 수정
               </Button>
             </>
@@ -124,9 +126,9 @@ export default function FarmDrawer({ farm, isOpen, onClose, onUpdate }: FarmDraw
 
         {/* Current rental */}
         {rental && (
-          <div className="bg-bg-page rounded-xl p-4 border border-border space-y-3">
+          <div className="bg-bg-muted rounded-xl p-4 border border-border/60 space-y-3">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-[14px] font-semibold text-text-primary">현재 임대 계약</h3>
+              <h3 className="text-[13px] font-semibold text-text-primary">현재 임대 계약</h3>
               {daysLeft !== null && (
                 <Badge
                   label={daysLeft <= 0 ? '만료됨' : `D-${daysLeft}`}
@@ -144,7 +146,7 @@ export default function FarmDrawer({ farm, isOpen, onClose, onUpdate }: FarmDraw
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between text-[14px]">
                   <span className="text-text-secondary">{label}</span>
-                  <span className="text-text-primary">{value}</span>
+                  <span className="text-text-primary font-medium">{value}</span>
                 </div>
               ))}
               <div className="flex justify-between text-[14px]">
@@ -173,19 +175,19 @@ export default function FarmDrawer({ farm, isOpen, onClose, onUpdate }: FarmDraw
 
         {/* History */}
         <div>
-          <h3 className="text-[14px] font-semibold text-text-primary mb-3">임대 이력</h3>
+          <h3 className="text-[13px] font-semibold text-text-primary mb-3">임대 이력</h3>
           {history.length === 0 ? (
-            <p className="text-text-tertiary text-[14px] text-center py-4">임대 이력이 없습니다</p>
+            <p className="text-text-tertiary text-[13px] text-center py-4">임대 이력이 없습니다</p>
           ) : (
             <div className="space-y-2">
               {history.map((r) => {
-                const rStatusColor = r.status === 'active' ? '#059669' : r.status === 'expired' ? '#DC2626' : '#6B7280';
-                const rStatusBg = r.status === 'active' ? '#ECFDF5' : r.status === 'expired' ? '#FEF2F2' : '#F3F4F6';
+                const rStatusColor = r.status === 'active' ? '#059669' : r.status === 'expired' ? '#DC2626' : '#64748B';
+                const rStatusBg = r.status === 'active' ? '#ECFDF5' : r.status === 'expired' ? '#FEF2F2' : '#F1F5F9';
                 return (
                   <div
                     key={r.id}
                     onClick={() => router.push(`/dashboard/rentals/${r.id}`)}
-                    className="bg-bg-page border border-border rounded-xl p-3 hover:bg-bg-hover cursor-pointer transition-colors"
+                    className="bg-bg-muted rounded-xl p-3.5 hover:bg-bg-hover cursor-pointer transition-colors duration-150"
                   >
                     <div className="flex items-center justify-between text-[14px]">
                       <span className="text-text-primary font-medium">{r.customer?.name}</span>

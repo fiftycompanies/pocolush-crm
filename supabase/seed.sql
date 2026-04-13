@@ -200,3 +200,11 @@ INSERT INTO farm_rentals (farm_id, customer_id, start_date, end_date, plan, mont
 -- SELECT COUNT(*) AS notes FROM inquiry_notes;
 -- SELECT COUNT(*) AS rentals FROM farm_rentals;
 -- SELECT number, area_pyeong, status FROM farms ORDER BY number;
+
+-- ────────────────────────────────────────
+-- 관리자 계정
+-- ────────────────────────────────────────
+-- Supabase Auth에 관리자 계정 생성은 Dashboard에서 해야 함
+-- Authentication > Users > Add User
+-- 이메일: admin@pocolush.co.kr
+-- 비밀번호: 123456

@@ -80,10 +80,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-5">
       <div>
-        <h1 className="text-[24px] font-bold text-text-primary">설정</h1>
-        <p className="text-[14px] text-text-secondary mt-1">직원 관리 및 시스템 설정</p>
+        <h1 className="text-[22px] font-bold text-text-primary tracking-tight">설정</h1>
+        <p className="text-[14px] text-text-secondary mt-0.5">직원 관리 및 시스템 설정</p>
       </div>
 
       {/* Invite */}
@@ -105,45 +105,45 @@ export default function SettingsPage() {
       </Card>
 
       {/* Staff list */}
-      <div className="bg-white border border-border rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
+      <div className="bg-white rounded-2xl shadow-xs border border-border/60 overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
           <h2 className="text-[14px] font-semibold text-text-primary">직원 목록</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border bg-bg-page">
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">이름</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">역할</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">담당 문의수</th>
-                <th className="text-left px-4 py-3 text-[13px] text-text-secondary font-medium">가입일</th>
+              <tr className="border-b border-border">
+                <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">이름</th>
+                <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">역할</th>
+                <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">담당 문의수</th>
+                <th className="text-left px-5 py-3 text-[12px] text-text-tertiary font-semibold uppercase tracking-wider">가입일</th>
               </tr>
             </thead>
             <tbody>
               {staff.map((s) => (
-                <tr key={s.id} className="border-b border-[#F3F4F6] hover:bg-bg-page transition-colors h-[56px]">
-                  <td className="px-4 py-3 text-[14px] text-text-primary font-medium">
+                <tr key={s.id} className="border-b border-border-light hover:bg-bg-hover transition-colors duration-150">
+                  <td className="px-5 py-3.5 text-[14px] text-text-primary font-medium">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-primary text-[13px] font-semibold">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[13px] font-semibold">
                         {s.name.charAt(0)}
                       </div>
                       {s.name}
                       {s.id === currentUser.id && (
-                        <span className="text-[12px] text-text-tertiary">(나)</span>
+                        <span className="text-[11px] text-text-tertiary bg-bg-muted px-1.5 py-0.5 rounded">(나)</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3.5">
                     <Badge
                       label={s.role === 'admin' ? '관리자' : '직원'}
-                      color={s.role === 'admin' ? '#16A34A' : '#6B7280'}
-                      bg={s.role === 'admin' ? '#DCFCE7' : '#F3F4F6'}
+                      color={s.role === 'admin' ? '#16A34A' : '#64748B'}
+                      bg={s.role === 'admin' ? '#DCFCE7' : '#F1F5F9'}
                     />
                   </td>
-                  <td className="px-4 py-3 text-[14px] text-primary font-semibold">
+                  <td className="px-5 py-3.5 text-[14px] text-primary font-semibold">
                     {inquiryCounts[s.id] || 0}
                   </td>
-                  <td className="px-4 py-3 text-[14px] text-text-tertiary">
+                  <td className="px-5 py-3.5 text-[14px] text-text-tertiary">
                     {new Date(s.created_at).toLocaleDateString('ko-KR')}
                   </td>
                 </tr>

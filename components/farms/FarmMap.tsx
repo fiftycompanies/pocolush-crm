@@ -11,7 +11,7 @@ interface FarmMapProps {
 }
 
 function getFarmColors(farm: Farm) {
-  if (farm.status === 'maintenance') return { bg: '#F3F4F6', border: '#D1D5DB', text: '#6B7280' };
+  if (farm.status === 'maintenance') return { bg: '#F1F5F9', border: '#CBD5E1', text: '#64748B' };
   if (farm.status === 'available') return { bg: '#F0FDF4', border: '#86EFAC', text: '#16A34A' };
 
   const rental = farm.current_rental;
@@ -28,9 +28,11 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
 
   return (
     <Card>
-      <h3 className="text-[16px] font-semibold text-text-primary mb-4">농장 배치도</h3>
+      <div className="px-6">
+        <h3 className="text-sm font-semibold">농장 배치도</h3>
+      </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="px-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {sorted.map((farm) => {
           const colors = getFarmColors(farm);
           const rental = farm.current_rental;
@@ -40,7 +42,7 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
             <button
               key={farm.id}
               onClick={() => onFarmClick(farm)}
-              className={`relative rounded-xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+              className={`relative rounded-lg p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
                 (colors as { pulse?: boolean }).pulse ? 'animate-pulse' : ''
               }`}
               style={{
@@ -49,46 +51,46 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
               }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[14px] font-bold" style={{ color: colors.text }}>
+                <span className="text-sm font-bold" style={{ color: colors.text }}>
                   {farm.number}번
                 </span>
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.text }} />
+                <div className="size-2 rounded-full" style={{ backgroundColor: colors.text }} />
               </div>
 
               {farm.status === 'rented' && rental ? (
                 <div>
-                  <p className="text-[14px] text-text-primary font-medium truncate">
+                  <p className="text-xs font-medium truncate">
                     {rental.customer?.name || '임차인'}
                   </p>
                   {daysLeft !== null && (
-                    <p className="text-[12px] mt-0.5" style={{ color: colors.text }}>
+                    <p className="text-xs mt-0.5" style={{ color: colors.text }}>
                       {daysLeft <= 0 ? '만료됨' : `D-${daysLeft}`}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-[14px]" style={{ color: colors.text }}>
+                <p className="text-xs" style={{ color: colors.text }}>
                   {FARM_STATUS[farm.status]?.label || farm.status}
                 </p>
               )}
-              <p className="text-[12px] text-text-secondary mt-1">{farm.area_pyeong}평</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{farm.area_pyeong}평</p>
             </button>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 mt-5 pt-4 border-t border-border">
+      <div className="px-6 flex flex-wrap gap-5 pt-4 border-t">
         {[
           { color: '#059669', label: '임대중' },
           { color: '#16A34A', label: '비어있음' },
           { color: '#D97706', label: '만료임박(30일)' },
           { color: '#DC2626', label: '만료임박(7일)' },
-          { color: '#6B7280', label: '관리중' },
+          { color: '#64748B', label: '관리중' },
         ].map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
-            <span className="text-[12px] text-text-secondary">{item.label}</span>
+          <div key={item.label} className="flex items-center gap-2">
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+            <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         ))}
       </div>

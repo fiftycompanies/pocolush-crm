@@ -156,17 +156,17 @@ export default function InquiryDrawer({
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <TypeBadge type={inquiry.type} />
             <StatusBadge status={inquiry.status} />
           </div>
-          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors">
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary w-8 h-8 flex items-center justify-center rounded-xl hover:bg-bg-hover transition-colors duration-150">
             ✕
           </button>
         </div>
 
         <div>
-          <h2 className="text-[20px] font-bold text-text-primary">
+          <h2 className="text-[20px] font-bold text-text-primary tracking-tight">
             {inquiry.customer?.name || '이름 없음'}
           </h2>
           <p className="text-[13px] text-text-tertiary mt-1">
@@ -175,40 +175,36 @@ export default function InquiryDrawer({
         </div>
 
         {/* Basic info */}
-        <div className="space-y-3">
-          <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+        <div className="bg-bg-muted rounded-xl p-4 space-y-0">
+          <div className="flex justify-between text-[14px] py-2.5 border-b border-border-light">
             <span className="text-text-secondary">연락처</span>
-            <span className="text-text-primary">{inquiry.customer?.phone || '-'}</span>
+            <span className="text-text-primary font-medium">{inquiry.customer?.phone || '-'}</span>
           </div>
-          <div className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+          <div className="flex justify-between text-[14px] py-2.5 border-b border-border-light">
             <span className="text-text-secondary">접수경로</span>
-            <span className="text-text-primary">{inquiry.source}</span>
+            <span className="text-text-primary font-medium">{inquiry.source}</span>
           </div>
           {inquiry.data && Object.keys(inquiry.data).length > 0 && (
             Object.entries(inquiry.data).map(([key, val]) => (
-              <div key={key} className="flex justify-between text-[14px] py-2 border-b border-[#F3F4F6]">
+              <div key={key} className="flex justify-between text-[14px] py-2.5 border-b border-border-light last:border-b-0">
                 <span className="text-text-secondary">{key}</span>
-                <span className="text-text-primary">{String(val)}</span>
+                <span className="text-text-primary font-medium">{String(val)}</span>
               </div>
             ))
           )}
         </div>
 
-        {/* Status change */}
-        <div>
-          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">상태 변경</label>
+        {/* Status & Assignee */}
+        <div className="grid grid-cols-2 gap-3">
           <Select
+            label="상태 변경"
             options={STATUS_OPTIONS}
             value={inquiry.status}
             onChange={(e) => handleStatusChange(e.target.value)}
             className="w-full"
           />
-        </div>
-
-        {/* Assignee */}
-        <div>
-          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">담당자 배정</label>
           <Select
+            label="담당자 배정"
             options={staff.map((s) => ({ value: s.id, label: s.name }))}
             placeholder="미배정"
             value={inquiry.assignee_id || ''}
@@ -219,8 +215,8 @@ export default function InquiryDrawer({
 
         {/* Rental connection for jaramter inquiries */}
         {inquiry.type === 'jaramter_inquiry' && (
-          <div className="bg-bg-page rounded-xl p-4 border border-border">
-            <h3 className="text-[14px] font-semibold text-text-primary mb-3">자람터 임대 연결</h3>
+          <div className="bg-bg-muted rounded-xl p-4 border border-border/60">
+            <h3 className="text-[13px] font-semibold text-text-primary mb-3">자람터 임대 연결</h3>
             {rental ? (
               <div className="space-y-2">
                 <div className="flex justify-between text-[14px]">
@@ -258,13 +254,13 @@ export default function InquiryDrawer({
 
         {/* Add note */}
         <div>
-          <label className="block text-[13px] font-medium text-[#374151] mb-1.5">메모 추가</label>
+          <label className="block text-[13px] font-medium text-text-secondary mb-1.5">메모 추가</label>
           <textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             rows={3}
             placeholder="메모를 입력하세요..."
-            className="w-full bg-bg-input border border-border-input rounded-[10px] px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_#DCFCE7] transition-all resize-none"
+            className="w-full bg-bg-input border border-border rounded-xl px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-150 resize-none"
           />
           <Button
             onClick={handleAddNote}
@@ -280,7 +276,7 @@ export default function InquiryDrawer({
 
         {/* Timeline */}
         <div>
-          <h3 className="text-[14px] font-semibold text-text-primary mb-4 border-t border-border pt-4">
+          <h3 className="text-[13px] font-semibold text-text-primary mb-4 border-t border-border pt-5">
             히스토리
           </h3>
           <NoteTimeline notes={notes} />

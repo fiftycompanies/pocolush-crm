@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, Map, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell } from 'lucide-react';
 
 const mainNav = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
@@ -12,7 +12,20 @@ const mainNav = [
   { href: '/dashboard/rentals', label: '임대 계약', icon: FileText },
 ];
 
+const memberNav = [
+  { href: '/dashboard/members', label: '회원 관리', icon: UserCheck },
+  { href: '/dashboard/bbq', label: '바베큐 예약', icon: Flame },
+  { href: '/dashboard/store', label: '스토어 관리', icon: ShoppingBag },
+  { href: '/dashboard/coupons', label: '쿠폰 관리', icon: Ticket },
+  { href: '/dashboard/notices', label: '공지 관리', icon: Megaphone },
+];
+
+const contentNav = [
+  { href: '/dashboard/blog', label: '블로그 관리', icon: FileEdit },
+];
+
 const bottomNav = [
+  { href: '/dashboard/notifications', label: '알림 설정', icon: Bell },
   { href: '/dashboard/settings', label: '설정', icon: Settings },
 ];
 
@@ -30,40 +43,53 @@ export default function Sidebar() {
       <Link
         key={item.href}
         href={item.href}
-        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[14px] transition-all h-10 ${
+        className={`flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium transition-all ${
           isActive
-            ? 'bg-primary-light text-primary font-semibold'
-            : 'text-[#374151] hover:bg-bg-hover'
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
+            : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground'
         }`}
       >
-        <Icon className="w-4 h-4" strokeWidth={isActive ? 2.5 : 2} />
+        <Icon className="size-4 shrink-0" strokeWidth={isActive ? 2 : 1.8} />
         <span>{item.label}</span>
       </Link>
     );
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-[220px] bg-white border-r border-border flex flex-col z-30">
+    <aside
+      className="fixed left-0 top-0 h-full bg-sidebar border-r border-sidebar-border flex flex-col z-30"
+      style={{ width: '16rem' }}
+    >
       {/* Logo */}
-      <div className="px-5 h-[60px] flex items-center">
-        <Link href="/dashboard" className="flex items-center gap-1.5">
-          <span className="font-bold text-[16px] text-text-primary tracking-tight">
-            POCO
-          </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          <span className="font-bold text-[16px] text-text-primary tracking-tight">
-            CRM
+      <div className="h-14 px-4 flex items-center">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="size-8 rounded-md bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-xs font-bold tracking-tight">P</span>
+          </div>
+          <span className="font-semibold text-sm text-sidebar-foreground tracking-tight">
+            POCOLUSH CRM
           </span>
         </Link>
       </div>
 
+      {/* Separator */}
+      <div className="mx-4 h-px bg-sidebar-border" />
+
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-2 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
         {mainNav.map(renderItem)}
+
+        <div className="mx-1 my-2 h-px bg-sidebar-border" />
+        <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-wider mb-1">회원 서비스</p>
+        {memberNav.map(renderItem)}
+
+        <div className="mx-1 my-2 h-px bg-sidebar-border" />
+        <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-wider mb-1">콘텐츠</p>
+        {contentNav.map(renderItem)}
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-3 border-t border-border space-y-0.5">
+      <div className="px-3 py-4 border-t border-sidebar-border flex flex-col gap-1">
         {bottomNav.map(renderItem)}
       </div>
     </aside>
