@@ -40,7 +40,7 @@ export default function RentalsPage() {
           <p className="text-[14px] text-text-secondary mt-0.5">전체 {filtered.length}건</p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButton target="rentals" params={{ status: tab, search }} />
+          <ExportButton target="rentals" params={{ status: tab, search }} dateField="created_at" />
           <Button onClick={() => router.push('/dashboard/rentals/new')} variant="primary">
             + 새 계약 등록
           </Button>

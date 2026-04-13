@@ -39,7 +39,7 @@ export default function AdminNoticesPage() {
         <div><h1 className="text-[22px] font-bold text-text-primary tracking-tight">공지 관리</h1>
         <p className="text-sm text-text-secondary mt-1">전체 {notices.length}건</p></div>
         <div className="flex items-center gap-2">
-          <ExportButton target="notices" />
+          <ExportButton target="notices" dateField="created_at" />
           <Link href="/dashboard/notices/new" className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-dark">
             <Plus className="size-4" /> 새 공지
           </Link>

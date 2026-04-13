@@ -27,8 +27,22 @@ interface ExportConfig {
   sheetName: string;
   filename: string;
   columns: ExcelColumn[];
+  dateField?: string; // 기간 필터 대상 컬럼 (없으면 기간 필터 미적용)
   query: (supabase: Awaited<ReturnType<typeof createClient>>, params: URLSearchParams) => Promise<unknown[]>;
   transform: (row: any) => Record<string, unknown>;
+}
+
+// 공통 날짜 필터 헬퍼: lt(nextDay) 패턴으로 타임존 안전
+function applyDateFilter(q: any, params: URLSearchParams, dateField: string) {
+  const from = params.get('from');
+  const to = params.get('to');
+  if (from) q = q.gte(dateField, from);
+  if (to) {
+    const nextDay = new Date(to);
+    nextDay.setDate(nextDay.getDate() + 1);
+    q = q.lt(dateField, nextDay.toISOString().split('T')[0]);
+  }
+  return q;
 }
 
 const MEMBER_STATUS_LABEL: Record<string, string> = {
@@ -77,6 +91,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   inquiries: {
     sheetName: '문의목록',
     filename: '포코러쉬_문의목록',
+    dateField: 'created_at',
     columns: [
       { header: '유형', key: 'type_label', width: 18 },
       { header: '이름', key: 'name', width: 14 },
@@ -96,6 +111,7 @@ const CONFIGS: Record<string, ExportConfig> = {
       const status = params.get('status');
       if (type) q = q.eq('type', type);
       if (status) q = q.eq('status', status);
+      q = applyDateFilter(q, params, 'created_at');
       const { data } = await q;
       let rows = data || [];
       const search = params.get('search')?.toLowerCase();
@@ -124,6 +140,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   customers: {
     sheetName: '고객목록',
     filename: '포코러쉬_고객목록',
+    dateField: 'created_at',
     columns: [
       { header: '이름', key: 'name', width: 14 },
       { header: '연락처', key: 'phone', width: 16, style: PHONE_STYLE },
@@ -132,10 +149,12 @@ const CONFIGS: Record<string, ExportConfig> = {
       { header: '최근 접촉일', key: 'last_inquiry_at', width: 14 },
     ],
     query: async (supabase, params) => {
-      const { data: customers } = await supabase
+      let q = supabase
         .from('customers')
         .select('*, inquiries:inquiries(created_at)')
         .order('created_at', { ascending: false });
+      q = applyDateFilter(q, params, 'created_at');
+      const { data: customers } = await q;
       let rows = (customers || []).map((c: any) => ({
         ...c,
         inquiry_count: c.inquiries?.length ?? 0,
@@ -167,6 +186,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   rentals: {
     sheetName: '임대계약',
     filename: '포코러쉬_임대계약',
+    dateField: 'created_at',
     columns: [
       { header: '농장', key: 'farm_name', width: 14 },
       { header: '고객명', key: 'customer_name', width: 14 },
@@ -185,6 +205,7 @@ const CONFIGS: Record<string, ExportConfig> = {
         .order('created_at', { ascending: false });
       const status = params.get('status');
       if (status) q = q.eq('status', status);
+      q = applyDateFilter(q, params, 'created_at');
       const { data } = await q;
       let rows = data || [];
       const search = params.get('search')?.toLowerCase();
@@ -252,6 +273,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   members: {
     sheetName: '회원목록',
     filename: '포코러쉬_회원목록',
+    dateField: 'created_at',
     columns: [
       { header: '이름', key: 'name', width: 14 },
       { header: '연락처', key: 'phone', width: 16, style: PHONE_STYLE },
@@ -266,6 +288,7 @@ const CONFIGS: Record<string, ExportConfig> = {
       let q = supabase.from('members').select('*').order('created_at', { ascending: false });
       const status = params.get('status');
       if (status) q = q.eq('status', status);
+      q = applyDateFilter(q, params, 'created_at');
       const { data } = await q;
       let rows = data || [];
       const search = params.get('search')?.toLowerCase();
@@ -295,6 +318,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   blog: {
     sheetName: '블로그',
     filename: '포코러쉬_블로그',
+    dateField: 'created_at',
     columns: [
       { header: '제목', key: 'title', width: 40 },
       { header: '카테고리', key: 'category', width: 14 },
@@ -302,12 +326,14 @@ const CONFIGS: Record<string, ExportConfig> = {
       { header: '조회수', key: 'view_count', width: 10 },
       { header: '작성일', key: 'created_at', width: 14 },
     ],
-    query: async (supabase) => {
-      const { data } = await supabase
+    query: async (supabase, params) => {
+      let q = supabase
         .from('posts')
         .select('*')
         .eq('site_id', 'pocolush')
         .order('created_at', { ascending: false });
+      q = applyDateFilter(q, params, 'created_at');
+      const { data } = await q;
       return data || [];
     },
     transform: (row) => ({
@@ -323,17 +349,20 @@ const CONFIGS: Record<string, ExportConfig> = {
   notices: {
     sheetName: '공지사항',
     filename: '포코러쉬_공지사항',
+    dateField: 'created_at',
     columns: [
       { header: '제목', key: 'title', width: 40 },
       { header: '카테고리', key: 'category_label', width: 14 },
       { header: '상태', key: 'status_label', width: 10 },
       { header: '작성일', key: 'created_at', width: 14 },
     ],
-    query: async (supabase) => {
-      const { data } = await supabase
+    query: async (supabase, params) => {
+      let q = supabase
         .from('notices')
         .select('*')
         .order('created_at', { ascending: false });
+      q = applyDateFilter(q, params, 'created_at');
+      const { data } = await q;
       return data || [];
     },
     transform: (row) => ({
@@ -348,6 +377,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   coupons: {
     sheetName: '쿠폰목록',
     filename: '포코러쉬_쿠폰목록',
+    dateField: 'created_at',
     columns: [
       { header: '쿠폰명', key: 'name', width: 24 },
       { header: '할인', key: 'discount', width: 16 },
@@ -355,11 +385,13 @@ const CONFIGS: Record<string, ExportConfig> = {
       { header: '유효기간 종료', key: 'valid_until', width: 14 },
       { header: '상태', key: 'status_label', width: 10 },
     ],
-    query: async (supabase) => {
-      const { data } = await supabase
+    query: async (supabase, params) => {
+      let q = supabase
         .from('coupons')
         .select('*')
         .order('created_at', { ascending: false });
+      q = applyDateFilter(q, params, 'created_at');
+      const { data } = await q;
       return data || [];
     },
     transform: (row) => ({
@@ -378,6 +410,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   coupon_issues: {
     sheetName: '쿠폰발급현황',
     filename: '포코러쉬_쿠폰발급현황',
+    dateField: 'created_at',
     columns: [
       { header: '쿠폰코드', key: 'coupon_code', width: 18 },
       { header: '쿠폰명', key: 'coupon_name', width: 24 },
@@ -387,10 +420,12 @@ const CONFIGS: Record<string, ExportConfig> = {
       { header: '사용일', key: 'used_at', width: 14 },
     ],
     query: async (supabase, params) => {
-      const { data } = await supabase
+      let q = supabase
         .from('coupon_issues')
         .select('*, coupon:coupons(name), member:members(name)')
         .order('created_at', { ascending: false });
+      q = applyDateFilter(q, params, 'created_at');
+      const { data } = await q;
       let rows = data || [];
       const search = params.get('search')?.toLowerCase();
       if (search) {
@@ -415,6 +450,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   bbq: {
     sheetName: '바베큐예약',
     filename: '포코러쉬_바베큐예약',
+    dateField: 'reservation_date',
     columns: [
       { header: '예약일', key: 'reservation_date', width: 14 },
       { header: '타임', key: 'time_slot_label', width: 16 },
@@ -429,9 +465,16 @@ const CONFIGS: Record<string, ExportConfig> = {
         .from('bbq_reservations')
         .select('*, member:members(name, phone)')
         .order('reservation_date', { ascending: false });
+      const from = params.get('from');
+      const to = params.get('to');
       const date = params.get('date');
       const status = params.get('status');
-      if (date) q = q.eq('reservation_date', date);
+      // from/to 우선, 없으면 기존 date 파라미터 사용
+      if (from || to) {
+        q = applyDateFilter(q, params, 'reservation_date');
+      } else if (date) {
+        q = q.eq('reservation_date', date);
+      }
       if (status) q = q.eq('status', status);
       const { data } = await q;
       let rows = data || [];
@@ -460,6 +503,7 @@ const CONFIGS: Record<string, ExportConfig> = {
   orders: {
     sheetName: '서비스신청',
     filename: '포코러쉬_서비스신청',
+    dateField: 'created_at',
     columns: [
       { header: '신청자', key: 'member_name', width: 14 },
       { header: '상품', key: 'product_name', width: 24 },
@@ -475,6 +519,7 @@ const CONFIGS: Record<string, ExportConfig> = {
         .order('created_at', { ascending: false });
       const status = params.get('status');
       if (status) q = q.eq('status', status);
+      q = applyDateFilter(q, params, 'created_at');
       const { data } = await q;
       return data || [];
     },

@@ -43,7 +43,7 @@ export default function InquiriesPage() {
           <h1 className="text-2xl font-bold tracking-tight">문의 관리</h1>
           <p className="text-sm text-muted-foreground mt-1">총 {inquiries.length}건</p>
         </div>
-        <ExportButton target="inquiries" params={{ type: typeFilter, status: statusFilter, search }} />
+        <ExportButton target="inquiries" params={{ type: typeFilter, status: statusFilter, search }} dateField="created_at" />
       </div>
 
       <InquiryFilters

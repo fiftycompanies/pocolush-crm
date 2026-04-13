@@ -122,7 +122,7 @@ export default function MembersPage() {
           <h1 className="text-[22px] font-bold text-text-primary tracking-tight">회원 관리</h1>
           <p className="text-sm text-text-secondary mt-1">전체 {members.length}명{pendingCount > 0 && ` · 승인 대기 ${pendingCount}명`}</p>
         </div>
-        <ExportButton target="members" params={{ status: tab === 'all' ? '' : tab, search }} />
+        <ExportButton target="members" params={{ status: tab === 'all' ? '' : tab, search }} dateField="created_at" />
       </div>
 
       {/* Tabs */}

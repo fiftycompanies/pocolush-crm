@@ -33,7 +33,7 @@ export default function AdminOrdersPage() {
           <h1 className="text-[22px] font-bold text-text-primary tracking-tight">서비스 신청 관리</h1>
           <p className="text-sm text-text-secondary mt-1">전체 {orders.length}건</p>
         </div>
-        <ExportButton target="orders" params={{ status: tab }} />
+        <ExportButton target="orders" params={{ status: tab }} dateField="created_at" />
       </div>
       <div className="flex gap-1 border-b border-border">
         {TABS.map(t => (

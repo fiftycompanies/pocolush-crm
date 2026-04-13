@@ -69,7 +69,7 @@ export default function BlogListPage() {
           <p style={{ fontSize: '14px' }} className="text-text-secondary mt-0.5">전체 {posts.length}건</p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButton target="blog" />
+          <ExportButton target="blog" dateField="created_at" />
           <Button variant="primary" onClick={() => router.push('/dashboard/blog/new')}>
             <Plus className="size-4" />
             새 글 작성

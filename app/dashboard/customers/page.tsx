@@ -29,7 +29,7 @@ export default function CustomersPage() {
           <h1 className="text-[22px] font-bold text-text-primary tracking-tight">고객 관리</h1>
           <p className="text-[14px] text-text-secondary mt-0.5">전체 {filtered.length}명</p>
         </div>
-        <ExportButton target="customers" params={{ search }} />
+        <ExportButton target="customers" params={{ search }} dateField="created_at" />
       </div>
 
       <div className="relative w-64">

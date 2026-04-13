@@ -68,7 +68,7 @@ export default function BBQAdminPage() {
           <h1 className="text-[22px] font-bold text-text-primary tracking-tight">바베큐 예약 관리</h1>
           <p className="text-sm text-text-secondary mt-1">예약 현황을 확인하고 관리하세요.</p>
         </div>
-        <ExportButton target="bbq" params={{ date: dateStr, status: tab === 'all' ? '' : tab, search }} />
+        <ExportButton target="bbq" params={{ status: tab === 'all' ? '' : tab, search }} dateField="reservation_date" />
       </div>
 
       {/* 날짜 네비게이터 */}

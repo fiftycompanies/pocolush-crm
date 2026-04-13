@@ -62,7 +62,7 @@ export default function AdminCouponsPage() {
       <div className="flex items-center justify-between">
         <div><h1 className="text-[22px] font-bold text-text-primary tracking-tight">쿠폰 관리</h1></div>
         <div className="flex items-center gap-2">
-          <ExportButton target={tab === 'issues' ? 'coupon_issues' : 'coupons'} params={tab === 'issues' ? { search: searchCode } : {}} />
+          <ExportButton target={tab === 'issues' ? 'coupon_issues' : 'coupons'} params={tab === 'issues' ? { search: searchCode } : {}} dateField="created_at" />
           <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-dark">
             <Plus className="size-4" /> 쿠폰 생성
           </button>
