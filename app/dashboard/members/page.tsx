@@ -161,7 +161,7 @@ export default function MembersPage() {
                 const transitions = getAvailableTransitions(member.status);
                 return (
                   <tr key={member.id} className="border-b border-border last:border-0 hover:bg-accent/30 cursor-pointer"
-                    onClick={() => setSelectedId(selectedId === member.id ? null : member.id)}>
+                    onClick={() => router.push(`/dashboard/members/${member.id}`)}>
                     <td className="px-4 py-3 font-medium text-text-primary">{member.name}</td>
                     <td className="px-4 py-3 text-text-secondary">{member.phone}</td>
                     <td className="px-4 py-3 text-text-secondary">{member.email}</td>
