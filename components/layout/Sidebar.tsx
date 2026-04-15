@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard } from 'lucide-react';
 
 const mainNav = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
   { href: '/dashboard/inquiries', label: '문의 관리', icon: MessageSquare },
-  { href: '/dashboard/customers', label: '고객 관리', icon: Users },
   { href: '/dashboard/farms', label: '농장 관리', icon: Map },
   { href: '/dashboard/rentals', label: '임대 계약', icon: FileText },
 ];
@@ -16,6 +15,7 @@ const memberNav = [
   { href: '/dashboard/members', label: '회원 관리', icon: UserCheck },
   { href: '/dashboard/bbq', label: '바베큐 예약', icon: Flame },
   { href: '/dashboard/store', label: '스토어 관리', icon: ShoppingBag },
+  { href: '/dashboard/plans', label: '플랜 관리', icon: CreditCard },
   { href: '/dashboard/coupons', label: '쿠폰 관리', icon: Ticket },
   { href: '/dashboard/notices', label: '공지 관리', icon: Megaphone },
 ];

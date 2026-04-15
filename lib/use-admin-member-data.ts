@@ -49,13 +49,13 @@ export function useAdminReservations(dateFilter?: string) {
 }
 
 export function useAdminOrders(statusFilter?: string) {
-  const [orders, setOrders] = useState<(ServiceOrder & { member?: { name: string }; product?: { name: string } })[]>([]);
+  const [orders, setOrders] = useState<(ServiceOrder & { member?: { name: string; phone: string }; product?: { name: string } })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     let query = supabase.from('service_orders')
-      .select('*, member:members(name), product:store_products(name)')
+      .select('*, member:members(name, phone), product:store_products(name)')
       .order('created_at', { ascending: false });
     if (statusFilter) query = query.eq('status', statusFilter);
     const { data } = await query;

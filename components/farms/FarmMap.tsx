@@ -3,10 +3,20 @@
 import { differenceInDays } from 'date-fns';
 import { FARM_STATUS, EXPIRY_WARNING_DAYS, EXPIRY_DANGER_DAYS } from '@/lib/constants';
 import Card from '@/components/ui/Card';
-import type { Farm } from '@/types';
+import type { Farm, FarmZone } from '@/types';
+
+const ZONE_COLORS = [
+  { border: '#86EFAC', accent: '#059669' },
+  { border: '#93C5FD', accent: '#2563EB' },
+  { border: '#FCD34D', accent: '#D97706' },
+  { border: '#FCA5A5', accent: '#DC2626' },
+  { border: '#C4B5FD', accent: '#7C3AED' },
+  { border: '#67E8F9', accent: '#0891B2' },
+];
 
 interface FarmMapProps {
   farms: Farm[];
+  zones?: FarmZone[];
   onFarmClick: (farm: Farm) => void;
 }
 
@@ -23,13 +33,17 @@ function getFarmColors(farm: Farm) {
   return { bg: '#DCFCE7', border: '#86EFAC', text: '#059669' };
 }
 
-export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
+export default function FarmMap({ farms, zones = [], onFarmClick }: FarmMapProps) {
+  const zoneColorMap = new Map<string, typeof ZONE_COLORS[0]>();
+  zones.forEach((z, i) => zoneColorMap.set(z.id, ZONE_COLORS[i % ZONE_COLORS.length]));
+
   const sorted = [...farms].sort((a, b) => a.position_y - b.position_y || a.position_x - b.position_x);
 
   return (
     <Card>
-      <div className="px-6">
+      <div className="px-6 flex items-center justify-between">
         <h3 className="text-sm font-semibold">농장 배치도</h3>
+        <span className="text-xs text-muted-foreground">총 {farms.length}구좌</span>
       </div>
 
       <div className="px-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -37,6 +51,7 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
           const colors = getFarmColors(farm);
           const rental = farm.current_rental;
           const daysLeft = rental ? differenceInDays(new Date(rental.end_date), new Date()) : null;
+          const zoneColor = zoneColorMap.get(farm.zone_id);
 
           return (
             <button
@@ -50,6 +65,11 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
                 border: `1.5px solid ${colors.border}`,
               }}
             >
+              {/* 존 인디케이터 */}
+              {zoneColor && (
+                <div className="absolute top-1 right-1 size-2 rounded-full" style={{ backgroundColor: zoneColor.accent }} />
+              )}
+
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-bold" style={{ color: colors.text }}>
                   {farm.number}번
@@ -84,8 +104,8 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
         {[
           { color: '#059669', label: '임대중' },
           { color: '#16A34A', label: '비어있음' },
-          { color: '#D97706', label: '만료임박(30일)' },
-          { color: '#DC2626', label: '만료임박(7일)' },
+          { color: '#D97706', label: '만료임박' },
+          { color: '#DC2626', label: '만료위험' },
           { color: '#64748B', label: '관리중' },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
@@ -93,6 +113,17 @@ export default function FarmMap({ farms, onFarmClick }: FarmMapProps) {
             <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         ))}
+        {zones.length > 1 && (
+          <>
+            <span className="text-xs text-muted-foreground">|</span>
+            {zones.map((z, i) => (
+              <div key={z.id} className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full" style={{ backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length].accent }} />
+                <span className="text-xs text-muted-foreground">{z.name}</span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </Card>
   );

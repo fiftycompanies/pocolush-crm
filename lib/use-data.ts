@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import * as mock from './mock-data'
-import type { Customer, Inquiry, Farm, FarmRental, DailyCount } from '@/types'
+import type { Customer, Inquiry, Farm, FarmRental, FarmZone, DailyCount } from '@/types'
 
 const HAS_SUPABASE = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -196,6 +196,7 @@ export function useCustomers() {
 
 export function useFarms() {
   const [data, setData] = useState<Farm[]>([])
+  const [zones, setZones] = useState<FarmZone[]>([])
   const [loading, setLoading] = useState(true)
 
   const refetch = useCallback(async () => {
@@ -206,19 +207,21 @@ export function useFarms() {
     }
     const { createClient } = await import('./supabase/client')
     const supabase = createClient()
-    const { data: farmsData } = await supabase.from('farms').select('*').order('number')
-    if (!farmsData) { setLoading(false); return }
 
-    const { data: rentals } = await supabase
-      .from('farm_rentals')
-      .select('*, customer:customers(name, phone)')
-      .eq('status', 'active')
+    const [farmsRes, rentalsRes, zonesRes] = await Promise.all([
+      supabase.from('farms').select('*').order('number'),
+      supabase.from('farm_rentals').select('*, customer:customers(name, phone)').eq('status', 'active'),
+      supabase.from('farm_zones').select('*').order('sort_order'),
+    ])
 
-    const enriched: Farm[] = farmsData.map((f: Farm) => {
-      const rental = rentals?.find((r: FarmRental) => r.farm_id === f.id)
+    if (!farmsRes.data) { setLoading(false); return }
+
+    const enriched: Farm[] = farmsRes.data.map((f: Farm) => {
+      const rental = rentalsRes.data?.find((r: FarmRental) => r.farm_id === f.id)
       return { ...f, current_rental: rental || undefined }
     })
     setData(enriched)
+    setZones(zonesRes.data || [])
     setLoading(false)
   }, [])
 
@@ -226,7 +229,7 @@ export function useFarms() {
     refetch()
   }, [refetch])
 
-  return { data, loading, refetch }
+  return { data, zones, loading, refetch }
 }
 
 export function useRentals(statusFilter?: string) {

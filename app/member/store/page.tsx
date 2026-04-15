@@ -27,7 +27,10 @@ export default function MemberStorePage() {
       const { data: p } = await supabase.from('store_products').select('*').eq('is_active', true).order('sort_order');
       setProducts(p || []);
 
-      const { data: c } = await supabase.from('coupons').select('*').eq('is_active', true);
+      const today = new Date().toISOString().split('T')[0];
+      const { data: c } = await supabase.from('coupons').select('*')
+        .eq('is_active', true)
+        .or(`valid_until.is.null,valid_until.gte.${today}`);
       setCoupons(c || []);
 
       if (m) {

@@ -27,6 +27,12 @@ export const ORDER_STATUS = {
   cancelled: { label: '취소', color: '#6B7280', bg: '#F3F4F6' },
 } as const;
 
+export const PAYMENT_STATUS = {
+  '대기': { label: '대기', color: '#D97706', bg: '#FFFBEB' },
+  '납부완료': { label: '납부완료', color: '#059669', bg: '#ECFDF5' },
+  '미납': { label: '미납', color: '#DC2626', bg: '#FEF2F2' },
+} as const;
+
 export const PRODUCT_CATEGORIES = {
   service: { label: '농장 관리', emoji: '🌱' },
   seed: { label: '씨앗', emoji: '🌰' },

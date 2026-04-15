@@ -70,7 +70,7 @@ export default function AdminNoticesPage() {
                       <button onClick={() => togglePublish(n.id, n.is_published)} className="p-1.5 hover:bg-accent rounded-md" title={n.is_published ? '발행 취소' : '발행'}>
                         {n.is_published ? <EyeOff className="size-3.5 text-text-secondary" /> : <Eye className="size-3.5 text-green" />}
                       </button>
-                      <Link href={`/dashboard/notices/${n.id}`} className="p-1.5 hover:bg-accent rounded-md"><Edit3 className="size-3.5 text-text-secondary" /></Link>
+                      <Link href={`/dashboard/notices/${n.id}/edit`} className="p-1.5 hover:bg-accent rounded-md"><Edit3 className="size-3.5 text-text-secondary" /></Link>
                       <button onClick={() => handleDelete(n.id)} disabled={deleting === n.id} className="p-1.5 hover:bg-accent rounded-md"><Trash2 className="size-3.5 text-red" /></button>
                     </div>
                   </td>

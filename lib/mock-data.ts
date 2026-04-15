@@ -131,16 +131,16 @@ export const MOCK_INQUIRIES: (Inquiry & { customer: Customer })[] = [
 ]
 
 export const MOCK_FARMS: Farm[] = [
-  { id: 'f01', number: 1, name: '1번 농장', area_pyeong: 3.0, area_sqm: 9.92, status: 'rented', position_x: 0, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f02', number: 2, name: '2번 농장', area_pyeong: 2.5, area_sqm: 8.26, status: 'rented', position_x: 1, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f03', number: 3, name: '3번 농장', area_pyeong: 4.0, area_sqm: 13.22, status: 'rented', position_x: 2, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f04', number: 4, name: '4번 농장', area_pyeong: 2.0, area_sqm: 6.61, status: 'available', position_x: 3, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f05', number: 5, name: '5번 농장', area_pyeong: 3.5, area_sqm: 11.57, status: 'rented', position_x: 4, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f06', number: 6, name: '6번 농장', area_pyeong: 5.0, area_sqm: 16.53, status: 'rented', position_x: 0, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f07', number: 7, name: '7번 농장', area_pyeong: 2.5, area_sqm: 8.26, status: 'available', position_x: 1, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f08', number: 8, name: '8번 농장', area_pyeong: 3.0, area_sqm: 9.92, status: 'rented', position_x: 2, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f09', number: 9, name: '9번 농장', area_pyeong: 2.0, area_sqm: 6.61, status: 'rented', position_x: 3, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f10', number: 10, name: '10번 농장', area_pyeong: 4.5, area_sqm: 14.88, status: 'maintenance', position_x: 4, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f01', number: 1, name: '1번 농장', area_pyeong: 3.0, area_sqm: 9.92, status: 'rented', zone_id: 'z01', position_x: 0, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f02', number: 2, name: '2번 농장', area_pyeong: 2.5, area_sqm: 8.26, status: 'rented', zone_id: 'z01', position_x: 1, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f03', number: 3, name: '3번 농장', area_pyeong: 4.0, area_sqm: 13.22, status: 'rented', zone_id: 'z01', position_x: 2, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f04', number: 4, name: '4번 농장', area_pyeong: 2.0, area_sqm: 6.61, status: 'available', zone_id: 'z01', position_x: 3, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f05', number: 5, name: '5번 농장', area_pyeong: 3.5, area_sqm: 11.57, status: 'rented', zone_id: 'z01', position_x: 4, position_y: 0, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f06', number: 6, name: '6번 농장', area_pyeong: 5.0, area_sqm: 16.53, status: 'rented', zone_id: 'z01', position_x: 0, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f07', number: 7, name: '7번 농장', area_pyeong: 2.5, area_sqm: 8.26, status: 'available', zone_id: 'z01', position_x: 1, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f08', number: 8, name: '8번 농장', area_pyeong: 3.0, area_sqm: 9.92, status: 'rented', zone_id: 'z01', position_x: 2, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f09', number: 9, name: '9번 농장', area_pyeong: 2.0, area_sqm: 6.61, status: 'rented', zone_id: 'z01', position_x: 3, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f10', number: 10, name: '10번 농장', area_pyeong: 4.5, area_sqm: 14.88, status: 'maintenance', zone_id: 'z01', position_x: 4, position_y: 1, created_at: '2024-01-01T00:00:00Z' },
 ]
 
 export const MOCK_RENTALS: (FarmRental & { farm: Farm; customer: Customer })[] = [

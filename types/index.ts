@@ -56,6 +56,16 @@ export interface DailyCount {
   count: number;
 }
 
+export interface FarmZone {
+  id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  farms?: Farm[];
+}
+
 export interface Farm {
   id: string;
   number: number;
@@ -63,10 +73,12 @@ export interface Farm {
   area_pyeong: number;
   area_sqm: number;
   status: 'available' | 'rented' | 'maintenance';
+  zone_id: string;
   position_x: number;
   position_y: number;
   notes?: string;
   created_at: string;
+  zone?: FarmZone;
   current_rental?: FarmRental & { customer: Customer };
 }
 
@@ -192,11 +204,13 @@ export interface ServiceOrder {
   quantity: number;
   total_price: number;
   status: OrderStatus;
+  payment_method: '계좌이체' | '카드' | '현금';
+  payment_status: '대기' | '납부완료' | '미납';
   admin_note: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
-  member?: Member;
+  member?: Member & { phone?: string };
   product?: StoreProduct;
 }
 
@@ -239,6 +253,19 @@ export interface Notice {
   is_published: boolean;
   is_push_sent: boolean;
   published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  description: string | null;
+  plots: number;
+  price: number;
+  duration_months: number;
+  is_active: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
