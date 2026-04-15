@@ -23,14 +23,26 @@ export default function OrdersPage() {
           {orders.map(o => {
             const status = ORDER_STATUS[o.status];
             return (
-              <div key={o.id} className="bg-white border border-border rounded-2xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-text-primary">{o.product?.name}</p>
-                  <p className="text-[11px] text-text-tertiary">{new Date(o.created_at).toLocaleDateString('ko-KR')} · {o.total_price.toLocaleString()}원</p>
+              <div key={o.id} className="bg-white border border-border rounded-2xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">{o.product?.name}</p>
+                    <p className="text-[11px] text-text-tertiary">{new Date(o.created_at).toLocaleDateString('ko-KR')} · {o.total_price.toLocaleString()}원</p>
+                  </div>
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ color: status?.color, backgroundColor: status?.bg }}>
+                    {status?.label}
+                  </span>
                 </div>
-                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ color: status?.color, backgroundColor: status?.bg }}>
-                  {status?.label}
-                </span>
+                {/* 결제상태 표시 */}
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/40">
+                  <span className="text-[10px] text-text-tertiary">결제</span>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                    o.payment_status === '납부완료' ? 'text-green bg-green-light' :
+                    o.payment_status === '미납' ? 'text-red bg-red-light' :
+                    'text-yellow bg-yellow-light'
+                  }`}>{o.payment_status || '대기'}</span>
+                  {o.payment_method && <span className="text-[10px] text-text-tertiary">{o.payment_method}</span>}
+                </div>
               </div>
             );
           })}

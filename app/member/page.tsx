@@ -29,17 +29,29 @@ export default function MemberHomePage() {
         .maybeSingle();
       if (m) setMember(m);
 
-      // 회원권
+      // 회원권 (active 우선, 없으면 expired도 표시)
       if (m) {
-        const { data: ms } = await supabase
+        const { data: activeMs } = await supabase
           .from('memberships')
-          .select('*, farm:farms(*)')
+          .select('*, farm:farms(*, zone:farm_zones(name))')
           .eq('member_id', m.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (ms) setMembership(ms);
+        if (activeMs) {
+          setMembership(activeMs);
+        } else {
+          const { data: latestMs } = await supabase
+            .from('memberships')
+            .select('*, farm:farms(*, zone:farm_zones(name))')
+            .eq('member_id', m.id)
+            .in('status', ['expired', 'cancelled'])
+            .order('end_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (latestMs) setMembership(latestMs);
+        }
 
         // 다음 예약
         const today = new Date().toISOString().split('T')[0];

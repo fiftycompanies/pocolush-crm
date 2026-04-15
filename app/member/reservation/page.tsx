@@ -108,9 +108,12 @@ export default function ReservationPage() {
   return (
     <div className="space-y-5">
       {/* 헤더 */}
-      <div>
-        <h1 className="text-lg font-bold text-text-primary">바베큐장 예약</h1>
-        <p className="text-xs text-text-secondary mt-0.5">{price.toLocaleString()}원 · 2시간 50분 · 현장결제</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-text-primary">바베큐장 예약</h1>
+          <p className="text-xs text-text-secondary mt-0.5">{price.toLocaleString()}원 · 2시간 50분 · 현장결제</p>
+        </div>
+        <a href="/member/reservation/history" className="text-xs text-primary hover:underline">예약 내역 &gt;</a>
       </div>
 
       {/* Step 1: 날짜 */}

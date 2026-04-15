@@ -6,7 +6,6 @@ import {
   INQUIRY_STATUS,
   FARM_STATUS,
   RENTAL_STATUS,
-  RENTAL_PLANS,
 } from '@/lib/constants';
 import { format } from 'date-fns';
 

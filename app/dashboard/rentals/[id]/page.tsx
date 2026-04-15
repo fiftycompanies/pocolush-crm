@@ -15,7 +15,7 @@ import { RENTAL_STATUS, PAYMENT_STATUS } from '@/lib/constants';
 import type { FarmRental } from '@/types';
 
 type RentalDetail = FarmRental & {
-  farm: { number: number; name: string; area_pyeong: number };
+  farm: { number: number; name: string; area_pyeong: number; zone?: { name: string } };
   customer: { name: string; phone: string };
 };
 
@@ -32,7 +32,7 @@ export default function RentalDetailPage() {
   const fetchData = async () => {
     const { data } = await supabase
       .from('farm_rentals')
-      .select('*, farm:farms(number, name, area_pyeong), customer:customers(name, phone)')
+      .select('*, farm:farms(number, name, area_pyeong, zone:farm_zones(name)), customer:customers(name, phone)')
       .eq('id', id)
       .single();
     if (data) setRental(data as RentalDetail);
@@ -95,7 +95,7 @@ export default function RentalDetailPage() {
       {/* Header */}
       <Card>
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="text-[20px] font-bold text-primary tracking-tight">{rental.farm?.number}번 농장</span>
+          <span className="text-[20px] font-bold text-primary tracking-tight">{rental.farm?.zone?.name} {rental.farm?.number}번</span>
           <Badge label={statusMeta.label} color={statusMeta.color} bg={statusMeta.bg} />
           {rental.status === 'active' && (
             <Badge

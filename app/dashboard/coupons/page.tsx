@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Plus, MoreHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { Coupon, CouponIssue } from '@/types';
+import type { Coupon } from '@/types';
 import ExportButton from '@/components/ui/ExportButton';
 
 export default function AdminCouponsPage() {
   const supabase = createClient();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [issues, setIssues] = useState<CouponIssue[]>([]);
+  const [issues, setIssues] = useState<{ id: string; coupon_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', description: '', discount_type: 'percentage', discount_value: '', target_service: '', valid_until: '', max_issues: '' });

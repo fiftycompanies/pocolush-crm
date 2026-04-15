@@ -24,15 +24,28 @@ export default function MyPage() {
       const { data: m } = await supabase.from('members').select('*').eq('user_id', user.id).maybeSingle();
       if (m) {
         setMember(m);
-        const { data: ms } = await supabase
+        // active 우선, 없으면 expired
+        const { data: activeMs } = await supabase
           .from('memberships')
-          .select('*, farm:farms(*)')
+          .select('*, farm:farms(*, zone:farm_zones(name))')
           .eq('member_id', m.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (ms) setMembership(ms);
+        if (activeMs) {
+          setMembership(activeMs);
+        } else {
+          const { data: latestMs } = await supabase
+            .from('memberships')
+            .select('*, farm:farms(*, zone:farm_zones(name))')
+            .eq('member_id', m.id)
+            .in('status', ['expired', 'cancelled'])
+            .order('end_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (latestMs) setMembership(latestMs);
+        }
       }
       setLoading(false);
     }

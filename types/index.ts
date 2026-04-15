@@ -86,6 +86,7 @@ export interface FarmRental {
   id: string;
   farm_id: string;
   customer_id: string;
+  member_id?: string;
   start_date: string;
   end_date: string;
   plan?: '씨앗' | '새싹' | '자람';
