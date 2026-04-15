@@ -21,17 +21,19 @@ export default function FarmAddModal({ isOpen, onClose, onAdded, nextNumber, zon
   const supabase = createClient();
   const [name, setName] = useState(`${nextNumber}번 농장`);
   const [area, setArea] = useState('3.0');
-  const [zoneId, setZoneId] = useState(defaultZoneId || zones[0]?.id || '');
+  const [zoneId, setZoneId] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(`${nextNumber}번 농장`);
   }, [nextNumber]);
 
+  // 모달이 열릴 때마다 defaultZoneId로 리셋
   useEffect(() => {
-    if (defaultZoneId) setZoneId(defaultZoneId);
-    else if (zones.length > 0 && !zoneId) setZoneId(zones[0].id);
-  }, [defaultZoneId, zones, zoneId]);
+    if (isOpen) {
+      setZoneId(defaultZoneId || zones[0]?.id || '');
+    }
+  }, [isOpen, defaultZoneId, zones]);
 
   const handleSave = async () => {
     if (!name.trim() || !area || !zoneId) {
