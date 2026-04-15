@@ -33,6 +33,8 @@ export default function AdminStorePage() {
   const [ordLoading, setOrdLoading] = useState(true);
   const [orderTab, setOrderTab] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
+  const [memoTarget, setMemoTarget] = useState<string | null>(null);
+  const [memoText, setMemoText] = useState('');
 
   const fetchProducts = useCallback(async () => {
     const { data } = await supabase.from('store_products').select('*').order('sort_order');
@@ -88,6 +90,12 @@ export default function AdminStorePage() {
   const handlePayment = async (id: string, paymentStatus: string) => {
     const { error } = await supabase.from('service_orders').update({ payment_status: paymentStatus }).eq('id', id);
     if (error) toast.error('변경 실패'); else { toast.success('결제 상태가 변경되었습니다.'); fetchOrders(); }
+  };
+
+  const handleSaveMemo = async (id: string) => {
+    const { error } = await supabase.from('service_orders').update({ admin_note: memoText.trim() || null }).eq('id', id);
+    if (error) toast.error('메모 저장 실패'); else { toast.success('메모가 저장되었습니다.'); fetchOrders(); }
+    setMemoTarget(null); setMemoText('');
   };
 
   const filteredOrders = orders.filter(o => {
@@ -227,7 +235,7 @@ export default function AdminStorePage() {
                   <th className="px-4 py-3 font-medium text-text-secondary">신청일</th>
                   <th className="px-4 py-3 font-medium text-text-secondary">결제</th>
                   <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
-                  <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
+                  <th className="px-4 py-3 font-medium text-text-secondary">메모</th>
                 </tr></thead>
                 <tbody>
                   {filteredOrders.map(o => {
@@ -240,24 +248,43 @@ export default function AdminStorePage() {
                         <td className="px-4 py-3">{o.total_price.toLocaleString()}원</td>
                         <td className="px-4 py-3 text-text-secondary text-xs">{new Date(o.created_at).toLocaleDateString('ko-KR')}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                            o.payment_status === '납부완료' ? 'text-green bg-green-light' :
-                            o.payment_status === '미납' ? 'text-red bg-red-light' :
-                            'text-yellow bg-yellow-light'
-                          }`}>{o.payment_status || '대기'}</span>
+                          <select value={o.payment_status || '대기'}
+                            onChange={e => handlePayment(o.id, e.target.value)}
+                            className={`text-[11px] font-medium px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary ${
+                              o.payment_status === '납부완료' ? 'text-green bg-green-light' :
+                              o.payment_status === '미납' ? 'text-red bg-red-light' :
+                              'text-yellow bg-yellow-light'
+                            }`}>
+                            <option value="대기">대기</option>
+                            <option value="납부완료">납부완료</option>
+                            <option value="미납">미납</option>
+                          </select>
                         </td>
-                        <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: status?.color, backgroundColor: status?.bg }}>{status?.label}</span></td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-1">
-                            {o.payment_status !== '납부완료' && (
-                              <button onClick={() => handlePayment(o.id, '납부완료')} className="px-2 py-1 text-[11px] rounded-md bg-green-light text-green font-medium">결제확인</button>
-                            )}
-                            {o.status === 'pending' && <button onClick={() => handleOrderStatus(o.id, 'processing')} className="px-2 py-1 text-[11px] rounded-md bg-blue-light text-blue">처리시작</button>}
-                            {o.status === 'processing' && <button onClick={() => handleOrderStatus(o.id, 'completed')} className="px-2 py-1 text-[11px] rounded-md bg-green-light text-green">완료</button>}
-                            {(o.status === 'pending' || o.status === 'processing') && (
-                              <button onClick={() => handleOrderStatus(o.id, 'cancelled')} className="px-2 py-1 text-[11px] rounded-md bg-red-light text-red">취소</button>
-                            )}
-                          </div>
+                          <select value={o.status}
+                            onChange={e => handleOrderStatus(o.id, e.target.value)}
+                            className="text-[11px] font-medium px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                            style={{ color: status?.color, backgroundColor: status?.bg }}>
+                            <option value="pending">대기</option>
+                            <option value="processing">처리중</option>
+                            <option value="completed">완료</option>
+                            <option value="cancelled">취소</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          {memoTarget === o.id ? (
+                            <div className="flex gap-1">
+                              <input value={memoText} onChange={e => setMemoText(e.target.value)} autoFocus placeholder="메모"
+                                className="w-24 text-xs border border-primary rounded px-1.5 py-0.5 focus:outline-none" />
+                              <button onClick={() => handleSaveMemo(o.id)} className="text-[10px] text-green font-medium">저장</button>
+                              <button onClick={() => setMemoTarget(null)} className="text-[10px] text-text-tertiary">취소</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => { setMemoTarget(o.id); setMemoText(o.admin_note || ''); }}
+                              className="text-xs text-text-tertiary hover:text-primary truncate max-w-[80px] block">
+                              {o.admin_note || '메모'}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );

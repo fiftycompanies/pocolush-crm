@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, FileText, ShoppingBag, Ticket, Flame, LayoutDashboard } from 'lucide-react';
 import { useMemberDetail } from '@/lib/use-member-detail';
@@ -26,6 +26,13 @@ export default function MemberDetailPage() {
   const [tab, setTab] = useState<string>('overview');
 
   const data = useMemberDetail(memberId);
+
+  // 윈도우 포커스 복귀 시 데이터 새로고침 (다른 탭에서 상태 변경 후 돌아올 때)
+  useEffect(() => {
+    const handleFocus = () => data.refetch();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [data]);
 
   if (data.loading) {
     return <div className="py-20 text-center text-sm text-text-secondary">불러오는 중...</div>;

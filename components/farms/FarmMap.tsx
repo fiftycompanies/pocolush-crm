@@ -134,9 +134,9 @@ export default function FarmMap({ farms, zones = [], pendingOrders = [], onFarmC
   const unzonedFarms = farms.filter(f => !zones.find(z => z.id === f.zone_id));
 
   return (
-    <Card>
+    <Card padding={false}>
       {/* 상단 요약 */}
-      <div className="px-6 flex items-center justify-between">
+      <div className="px-6 pt-6 flex items-center justify-between">
         <h3 className="text-sm font-semibold">농장 현황 배치도</h3>
         <div className="flex items-center gap-4 text-xs">
           <span className="text-muted-foreground">총 <span className="font-bold text-text-primary">{totalFarms}</span>구좌</span>
@@ -206,7 +206,7 @@ export default function FarmMap({ farms, zones = [], pendingOrders = [], onFarmC
       </div>
 
       {/* 범례 */}
-      <div className="px-6 flex flex-wrap gap-4 pt-4 border-t">
+      <div className="px-6 pb-6 flex flex-wrap gap-4 pt-4 border-t">
         {[
           { color: '#059669', label: '임대중' },
           { color: '#16A34A', label: '비어있음' },
