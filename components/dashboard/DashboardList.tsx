@@ -79,7 +79,7 @@ export default function DashboardList() {
         detail: `${b.bbq_number}번 바베큐 · ${b.reservation_date}`,
         date: b.reservation_date, status: b.status,
         statusMeta: st || { label: b.status, color: '#6B7280', bg: '#F3F4F6' },
-        link: '/dashboard/bbq',
+        link: '/dashboard/requests?type=bbq',
       });
     });
     (ordersRes.data || []).forEach((o: { id: string; member?: { name: string }; product?: { name: string }; created_at: string; status: string }) => {
@@ -89,7 +89,7 @@ export default function DashboardList() {
         detail: o.product?.name || '서비스',
         date: o.created_at, status: o.status,
         statusMeta: st || { label: o.status, color: '#6B7280', bg: '#F3F4F6' },
-        link: '/dashboard/store',
+        link: '/dashboard/requests?type=order',
       });
     });
     (couponsRes.data || []).forEach((c: { id: string; member?: { name: string }; coupon?: { name: string }; created_at: string; status: string }) => {
@@ -99,7 +99,7 @@ export default function DashboardList() {
         detail: c.coupon?.name || '쿠폰',
         date: c.created_at, status: c.status,
         statusMeta: st || { label: c.status, color: '#6B7280', bg: '#F3F4F6' },
-        link: '/dashboard/coupons',
+        link: '/dashboard/requests?type=coupon',
       });
     });
     reqs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

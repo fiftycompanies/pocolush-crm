@@ -50,7 +50,7 @@ test.describe('8스킬 E2E 검증', () => {
   // #2. 쿠폰 비활성화/삭제
   test('#2 쿠폰 비활성화 + 삭제', async ({ page }) => {
     await page.goto(`${BASE}/dashboard/coupons`);
-    await expect(page.locator('h1')).toContainText('쿠폰 관리');
+    await expect(page.locator('h1')).toContainText('쿠폰 설정');
 
     // 테스트 쿠폰 생성
     await page.click('text=쿠폰 생성');
@@ -79,15 +79,18 @@ test.describe('8스킬 E2E 검증', () => {
     }
   });
 
-  // #3. 스토어 결제추적 UI
-  test('#3 스토어 결제추적 컬럼 + 검색', async ({ page }) => {
-    await page.goto(`${BASE}/dashboard/store/orders`);
-    await expect(page.locator('h1')).toContainText('서비스 신청 관리');
-    await expect(page.locator('th', { hasText: '결제' })).toBeVisible();
-    await expect(page.locator('th', { hasText: '연락처' })).toBeVisible();
+  // #3. 신청관리 허브
+  test('#3 신청관리 통합 페이지', async ({ page }) => {
+    await page.goto(`${BASE}/dashboard/requests`);
+    await expect(page.locator('h1')).toContainText('신청 관리');
+    // 타입 필터 칩 확인
+    await expect(page.locator('button', { hasText: 'BBQ' })).toBeVisible();
+    await expect(page.locator('button', { hasText: '스토어' })).toBeVisible();
+    await expect(page.locator('button', { hasText: '쿠폰' })).toBeVisible();
+    // 상태 탭 확인
+    await expect(page.locator('button', { hasText: '대기' }).first()).toBeVisible();
+    // 검색 확인
     await expect(page.locator('input[placeholder*="신청자명"]')).toBeVisible();
-    // 취소 탭 버튼 확인
-    await expect(page.locator('button', { hasText: '취소' }).first()).toBeVisible();
   });
 
   // #4. 회원 상태 변경

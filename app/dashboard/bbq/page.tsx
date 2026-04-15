@@ -2,153 +2,178 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { RESERVATION_STATUS, TIME_SLOTS } from '@/lib/member-constants';
+import { Plus, Edit3, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { TIME_SLOTS } from '@/lib/member-constants';
 import toast from 'react-hot-toast';
-import type { BBQReservation, Member } from '@/types';
-import ExportButton from '@/components/ui/ExportButton';
+import type { BBQFacility } from '@/types';
 
-type ReservationWithMember = BBQReservation & { member?: Pick<Member, 'name' | 'phone'> };
-
-const STATUS_TABS = [
-  { key: 'all', label: '전체' },
-  { key: 'confirmed', label: '예약확정' },
-  { key: 'completed', label: '이용완료' },
-  { key: 'cancelled', label: '취소' },
-  { key: 'no_show', label: '노쇼' },
-] as const;
-
-export default function BBQAdminPage() {
+export default function BBQSettingsPage() {
   const supabase = createClient();
-  const [reservations, setReservations] = useState<ReservationWithMember[]>([]);
+  const [facilities, setFacilities] = useState<BBQFacility[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('all');
-  const [search, setSearch] = useState('');
-  const [dateOffset, setDateOffset] = useState(0);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<BBQFacility | null>(null);
+  const [form, setForm] = useState({ name: '', price: '30000', notes: '' });
+  const [saving, setSaving] = useState(false);
 
-  const currentDate = new Date();
-  currentDate.setDate(currentDate.getDate() + dateOffset);
-  const dateStr = currentDate.toISOString().split('T')[0];
-
-  const fetchReservations = useCallback(async () => {
-    setLoading(true);
-    let query = supabase
-      .from('bbq_reservations')
-      .select('*, member:members(name, phone)')
-      .eq('reservation_date', dateStr)
-      .order('time_slot')
-      .order('bbq_number');
-
-    if (tab !== 'all') query = query.eq('status', tab);
-    const { data } = await query;
-    setReservations(data || []);
+  const fetchFacilities = useCallback(async () => {
+    const { data } = await supabase.from('bbq_facilities').select('*').order('number');
+    setFacilities(data || []);
     setLoading(false);
-  }, [supabase, dateStr, tab]);
+  }, [supabase]);
 
-  useEffect(() => { fetchReservations(); }, [fetchReservations]);
+  useEffect(() => { fetchFacilities(); }, [fetchFacilities]);
 
-  const filtered = reservations.filter(r => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return r.member?.name?.toLowerCase().includes(q) || r.member?.phone?.includes(q);
-  });
+  const nextNumber = facilities.length > 0 ? Math.max(...facilities.map(f => f.number)) + 1 : 1;
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    const { error } = await supabase.from('bbq_reservations').update({ status: newStatus }).eq('id', id);
-    if (error) toast.error('상태 변경 실패');
-    else { toast.success('상태가 변경되었습니다.'); fetchReservations(); }
+  const openNew = () => {
+    setEditing(null);
+    setForm({ name: `바베큐장 ${nextNumber}`, price: '30000', notes: '' });
+    setShowForm(true);
   };
 
-  const todayCount = reservations.filter(r => r.status === 'confirmed').length;
+  const openEdit = (f: BBQFacility) => {
+    setEditing(f);
+    setForm({ name: f.name, price: f.price.toString(), notes: f.notes || '' });
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.price) { toast.error('이름과 가격을 입력해주세요.'); return; }
+    setSaving(true);
+    if (editing) {
+      await supabase.from('bbq_facilities').update({ name: form.name, price: parseInt(form.price), notes: form.notes || null }).eq('id', editing.id);
+      toast.success('시설이 수정되었습니다.');
+    } else {
+      await supabase.from('bbq_facilities').insert({ number: nextNumber, name: form.name, price: parseInt(form.price), notes: form.notes || null });
+      toast.success('시설이 추가되었습니다.');
+    }
+    setSaving(false); setShowForm(false); fetchFacilities();
+  };
+
+  const toggleActive = async (f: BBQFacility) => {
+    await supabase.from('bbq_facilities').update({ is_active: !f.is_active }).eq('id', f.id);
+    toast.success(f.is_active ? '비활성화됨' : '활성화됨'); fetchFacilities();
+  };
+
+  const handleDelete = async (f: BBQFacility) => {
+    if (!confirm(`"${f.name}" 시설을 삭제하시겠습니까?`)) return;
+    const { error } = await supabase.from('bbq_facilities').delete().eq('id', f.id);
+    if (error) toast.error('예약 이력이 있어 삭제할 수 없습니다.');
+    else { toast.success('삭제되었습니다.'); fetchFacilities(); }
+  };
+
+  const activeCount = facilities.filter(f => f.is_active).length;
 
   return (
-    <div className="space-y-5" style={{ maxWidth: '1200px' }}>
+    <div className="space-y-6" style={{ maxWidth: '1200px' }}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">바베큐 예약 관리</h1>
-          <p className="text-sm text-text-secondary mt-1">예약 현황을 확인하고 관리하세요.</p>
+          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">바베큐장 설정</h1>
+          <p className="text-sm text-text-secondary mt-1">전체 {facilities.length}개 · 활성 {activeCount}개</p>
         </div>
-        <ExportButton target="bbq" params={{ status: tab === 'all' ? '' : tab, search }} dateField="reservation_date" />
+        <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-dark">
+          <Plus className="size-4" /> 시설 추가
+        </button>
       </div>
 
-      {/* 날짜 네비게이터 */}
-      <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">
-        <button onClick={() => setDateOffset(d => d - 1)} className="p-1 hover:bg-accent rounded-md"><ChevronLeft className="size-4" /></button>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-text-primary">{dateStr.replace(/-/g, '.')}</p>
-          <p className="text-[11px] text-text-tertiary">
-            {dateOffset === 0 ? '오늘' : dateOffset === 1 ? '내일' : dateOffset === -1 ? '어제' : ''}
-            {todayCount > 0 && ` · 예약 ${todayCount}건`}
-          </p>
+      {/* 추가/수정 폼 */}
+      {showForm && (
+        <div className="bg-card border rounded-xl p-5 space-y-3">
+          <h3 className="text-sm font-semibold">{editing ? '시설 수정' : '새 시설 추가'}</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="시설 이름 *"
+              className="border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+            <input type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="가격 *"
+              className="border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+            <input type="text" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="메모"
+              className="border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium disabled:opacity-40">
+              {saving ? '저장 중...' : editing ? '수정' : '추가'}
+            </button>
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-xl text-sm text-text-secondary">취소</button>
+          </div>
         </div>
-        <button onClick={() => setDateOffset(d => d + 1)} className="p-1 hover:bg-accent rounded-md"><ChevronRight className="size-4" /></button>
-      </div>
+      )}
 
-      {/* Tabs + Search */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1 border-b border-border flex-1">
-          {STATUS_TABS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-3 py-2 text-sm font-medium transition-colors relative ${tab === t.key ? 'text-primary' : 'text-text-tertiary hover:text-text-primary'}`}>
-              {t.label}
-              {tab === t.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+      {/* 배치도 */}
+      <div className="bg-card border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold">바베큐장 배치도</h3>
+          <span className="text-xs text-muted-foreground">{activeCount}개 운영중</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {facilities.map(f => (
+            <button key={f.id} onClick={() => openEdit(f)}
+              className={`rounded-xl p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer border ${
+                f.is_active
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-gray-50 border-gray-200 opacity-50'
+              }`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-sm font-bold ${f.is_active ? 'text-green-700' : 'text-gray-500'}`}>{f.number}번</span>
+                <div className={`size-2 rounded-full ${f.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+              </div>
+              <p className="text-xs font-medium truncate">{f.name}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{f.price.toLocaleString()}원</p>
             </button>
           ))}
         </div>
-        <div className="relative w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-text-tertiary" />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="이름 / 연락처"
-            className="w-full pl-9 pr-3 h-9 border border-border rounded-lg text-xs focus:outline-none focus:border-primary" />
+      </div>
+
+      {/* 타임 슬롯 */}
+      <div className="bg-card border rounded-xl p-6">
+        <h3 className="text-sm font-semibold mb-3">타임 슬롯</h3>
+        <div className="space-y-2">
+          {Object.entries(TIME_SLOTS).map(([key, slot]) => (
+            <div key={key} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-primary">{slot.label}</span>
+                <span className="text-xs text-text-secondary">{slot.time}</span>
+              </div>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full text-green bg-green-light">활성</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Table */}
-      {loading ? (
-        <p className="text-center text-sm text-text-secondary py-10">불러오는 중...</p>
-      ) : filtered.length === 0 ? (
-        <div className="bg-card border rounded-xl p-10 text-center">
-          <p className="text-sm text-text-tertiary">해당 날짜에 예약이 없습니다.</p>
-        </div>
-      ) : (
+      {/* 시설 목록 테이블 */}
+      {loading ? <p className="text-center text-sm text-text-secondary py-10">불러오는 중...</p> : (
         <div className="bg-card border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="px-4 py-3 font-medium text-text-secondary">타임</th>
-                <th className="px-4 py-3 font-medium text-text-secondary">장소</th>
-                <th className="px-4 py-3 font-medium text-text-secondary">예약자</th>
-                <th className="px-4 py-3 font-medium text-text-secondary">연락처</th>
-                <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
-                <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
-              </tr>
-            </thead>
+            <thead><tr className="border-b border-border text-left">
+              <th className="px-4 py-3 font-medium text-text-secondary">번호</th>
+              <th className="px-4 py-3 font-medium text-text-secondary">이름</th>
+              <th className="px-4 py-3 font-medium text-text-secondary">가격</th>
+              <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
+              <th className="px-4 py-3 font-medium text-text-secondary">메모</th>
+              <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
+            </tr></thead>
             <tbody>
-              {filtered.map(r => {
-                const status = RESERVATION_STATUS[r.status];
-                const slot = TIME_SLOTS[r.time_slot];
-                return (
-                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-accent/30">
-                    <td className="px-4 py-3 text-text-primary font-medium">{slot?.label} <span className="text-text-tertiary text-xs">{slot?.time}</span></td>
-                    <td className="px-4 py-3">{r.bbq_number}번</td>
-                    <td className="px-4 py-3 font-medium">{r.member?.name || '-'}</td>
-                    <td className="px-4 py-3 text-text-secondary">{r.member?.phone || '-'}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: status?.color, backgroundColor: status?.bg }}>
-                        {status?.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {r.status === 'confirmed' && (
-                        <div className="flex gap-1">
-                          <button onClick={() => handleStatusChange(r.id, 'completed')} className="px-2 py-1 text-[11px] rounded-md bg-blue-light text-blue hover:bg-blue/10">완료</button>
-                          <button onClick={() => handleStatusChange(r.id, 'no_show')} className="px-2 py-1 text-[11px] rounded-md bg-red-light text-red hover:bg-red/10">노쇼</button>
-                          <button onClick={() => handleStatusChange(r.id, 'cancelled')} className="px-2 py-1 text-[11px] rounded-md bg-gray-light text-gray hover:bg-gray/10">취소</button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+              {facilities.map(f => (
+                <tr key={f.id} className="border-b border-border last:border-0 hover:bg-accent/30">
+                  <td className="px-4 py-3 font-medium">{f.number}번</td>
+                  <td className="px-4 py-3">{f.name}</td>
+                  <td className="px-4 py-3">{f.price.toLocaleString()}원</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${f.is_active ? 'text-green bg-green-light' : 'text-gray bg-gray-light'}`}>
+                      {f.is_active ? '활성' : '비활성'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-text-tertiary text-xs">{f.notes || '-'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1">
+                      <button onClick={() => toggleActive(f)} className="p-1.5 hover:bg-accent rounded-md">
+                        {f.is_active ? <ToggleRight className="size-4 text-green" /> : <ToggleLeft className="size-4 text-gray" />}
+                      </button>
+                      <button onClick={() => openEdit(f)} className="p-1.5 hover:bg-accent rounded-md"><Edit3 className="size-3.5 text-text-secondary" /></button>
+                      <button onClick={() => handleDelete(f)} className="p-1.5 hover:bg-accent rounded-md"><Trash2 className="size-3.5 text-red" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
