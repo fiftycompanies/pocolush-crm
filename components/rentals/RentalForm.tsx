@@ -8,9 +8,8 @@ import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import Card from '@/components/ui/Card';
-import { PAYMENT_METHODS, RENTAL_PLANS } from '@/lib/constants';
-import type { Farm, Customer } from '@/types';
+import { PAYMENT_METHODS } from '@/lib/constants';
+import type { Farm, Customer, Plan } from '@/types';
 
 interface RentalFormProps {
   preselectedFarmId?: string;
@@ -23,6 +22,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
 
   const [farms, setFarms] = useState<Farm[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [customerSearch, setCustomerSearch] = useState('');
   const [newCustomer, setNewCustomer] = useState(false);
 
@@ -43,9 +43,10 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
 
   useEffect(() => {
     const fetchData = async () => {
-      const [farmsRes, custRes] = await Promise.all([
+      const [farmsRes, custRes, plansRes] = await Promise.all([
         supabase.from('farms').select('*').in('status', ['available', 'maintenance']).order('number'),
         supabase.from('customers').select('*').order('name'),
+        supabase.from('plans').select('*').eq('is_active', true).order('sort_order'),
       ]);
       if (preselectedFarmId) {
         const { data: presFarm } = await supabase.from('farms').select('*').eq('id', preselectedFarmId).single();
@@ -55,16 +56,20 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
       }
       if (farmsRes.data) setFarms(farmsRes.data);
       if (custRes.data) setCustomers(custRes.data);
+      if (plansRes.data) setPlans(plansRes.data);
     };
     fetchData();
   }, [supabase, preselectedFarmId]);
 
-  const handlePlanSelect = (plan: string) => {
-    const planInfo = RENTAL_PLANS[plan];
+  const handlePlanSelect = (plan: Plan) => {
+    const endDate = form.start_date
+      ? format(addMonths(new Date(form.start_date), plan.duration_months), 'yyyy-MM-dd')
+      : form.end_date;
     setForm({
       ...form,
-      plan,
-      monthly_fee: planInfo ? String(planInfo.fee) : form.monthly_fee,
+      plan: plan.name,
+      monthly_fee: String(plan.price),
+      end_date: endDate,
     });
   };
 
@@ -132,8 +137,8 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
-      {/* Farm select */}
-      <Card>
+      {/* 농장 선택 */}
+      <div className="bg-card border rounded-xl p-5">
         <h3 className="text-[14px] font-semibold text-text-primary mb-4">농장 선택</h3>
         <Select
           options={farms.map((f) => ({ value: f.id, label: `${f.number}번 — ${f.name} (${f.area_pyeong}평)` }))}
@@ -142,10 +147,10 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
           onChange={(e) => setForm({ ...form, farm_id: e.target.value })}
           className="w-full"
         />
-      </Card>
+      </div>
 
-      {/* Customer */}
-      <Card>
+      {/* 고객 정보 */}
+      <div className="bg-card border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[14px] font-semibold text-text-primary">고객 정보</h3>
           <button
@@ -178,10 +183,10 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
             />
           </div>
         )}
-      </Card>
+      </div>
 
-      {/* Period */}
-      <Card>
+      {/* 임대 기간 */}
+      <div className="bg-card border rounded-xl p-5">
         <h3 className="text-[14px] font-semibold text-text-primary mb-4">임대 기간</h3>
         <div className="grid grid-cols-2 gap-4">
           <Input label="시작일" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
@@ -199,31 +204,37 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
             </button>
           ))}
         </div>
-      </Card>
+      </div>
 
-      {/* Plan & Payment */}
-      <Card>
+      {/* 플랜 & 결제 */}
+      <div className="bg-card border rounded-xl p-5">
         <h3 className="text-[14px] font-semibold text-text-primary mb-4">플랜 & 결제</h3>
 
         <div className="mb-4">
           <label className="block text-[13px] font-medium text-text-secondary mb-2">플랜 선택</label>
-          <div className="flex gap-2">
-            {Object.entries(RENTAL_PLANS).map(([name, info]) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => handlePlanSelect(name)}
-                className={`flex-1 p-3.5 rounded-xl border text-center transition-all duration-150 cursor-pointer ${
-                  form.plan === name
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border bg-bg-muted text-text-secondary hover:border-text-tertiary'
-                }`}
-              >
-                <p className="text-[14px] font-semibold">{name}</p>
-                <p className="text-[12px] mt-0.5 opacity-80">{info.area} · {info.fee.toLocaleString()}원</p>
-              </button>
-            ))}
-          </div>
+          {plans.length > 0 ? (
+            <div className="flex gap-2">
+              {plans.map((plan) => (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => handlePlanSelect(plan)}
+                  className={`flex-1 p-3.5 rounded-xl border text-center transition-all duration-150 cursor-pointer ${
+                    form.plan === plan.name
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border bg-bg-muted text-text-secondary hover:border-text-tertiary'
+                  }`}
+                >
+                  <p className="text-[14px] font-semibold">{plan.name}</p>
+                  <p className="text-[12px] mt-0.5 opacity-80">{plan.plots}평 · {plan.price.toLocaleString()}원 · {plan.duration_months}개월</p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-text-tertiary py-3 text-center border border-dashed border-border rounded-xl">
+              등록된 플랜이 없습니다. 플랜 관리에서 추가해주세요.
+            </p>
+          )}
         </div>
 
         <Input
@@ -267,10 +278,10 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
             className="w-full"
           />
         </div>
-      </Card>
+      </div>
 
-      {/* Notes */}
-      <Card>
+      {/* 메모 */}
+      <div className="bg-card border rounded-xl p-5">
         <label className="block text-[13px] font-medium text-text-secondary mb-1.5">메모</label>
         <textarea
           value={form.notes}
@@ -279,7 +290,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
           placeholder="메모를 입력하세요..."
           className="w-full bg-bg-input border border-border rounded-xl px-3.5 py-3 text-[14px] text-text-primary placeholder-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all duration-150 resize-none"
         />
-      </Card>
+      </div>
 
       <div className="flex gap-3">
         <Button type="submit" variant="primary" className="flex-1" loading={saving}>
