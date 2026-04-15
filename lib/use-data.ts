@@ -14,31 +14,71 @@ type RentalRow = Omit<FarmRental, 'farm' | 'customer'> & {
   customer: { name: string; phone: string }
 }
 
+export interface DashboardStats {
+  totalFarms: number;
+  rentedFarms: number;
+  rentalRate: number;
+  unprocessedInquiries: number;
+  pendingBBQ: number;
+  pendingOrders: number;
+  pendingCoupons: number;
+  pendingTotal: number;
+  expiringThisMonth: number;
+  monthlyRevenue: number;
+}
+
 export function useDashboardStats() {
-  const [data, setData] = useState(mock.MOCK_STATS)
-  const [loading, setLoading] = useState(HAS_SUPABASE)
+  const [data, setData] = useState<DashboardStats>({
+    totalFarms: 0, rentedFarms: 0, rentalRate: 0,
+    unprocessedInquiries: 0,
+    pendingBBQ: 0, pendingOrders: 0, pendingCoupons: 0, pendingTotal: 0,
+    expiringThisMonth: 0, monthlyRevenue: 0,
+  })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!HAS_SUPABASE) return
+    if (!HAS_SUPABASE) { setLoading(false); return }
     const fetchStats = async () => {
       const { createClient } = await import('./supabase/client')
       const supabase = createClient()
       const today = new Date()
-      const todayStr = today.toISOString().split('T')[0]
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
 
-      const [todayRes, unprocessedRes, convertedRes, rentedRes] = await Promise.all([
-        supabase.from('inquiries').select('id', { count: 'exact', head: true }).gte('created_at', todayStr),
-        supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'converted').gte('updated_at', monthStart),
+      const [
+        totalFarmsRes, rentedFarmsRes,
+        inquiriesRes,
+        bbqRes, ordersRes, couponsRes,
+        expiringRes, revenueRes,
+      ] = await Promise.all([
+        supabase.from('farms').select('id', { count: 'exact', head: true }),
         supabase.from('farms').select('id', { count: 'exact', head: true }).eq('status', 'rented'),
+        supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+        supabase.from('bbq_reservations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').gte('reservation_date', today.toISOString().split('T')[0]),
+        supabase.from('service_orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
+        supabase.from('coupon_issues').select('id', { count: 'exact', head: true }).eq('status', 'issued'),
+        supabase.from('farm_rentals').select('id', { count: 'exact', head: true }).eq('status', 'active').lte('end_date', monthEnd).gte('end_date', monthStart),
+        supabase.from('farm_rentals').select('monthly_fee').eq('payment_status', '납부완료').gte('created_at', monthStart),
       ])
 
+      const total = totalFarmsRes.count ?? 0
+      const rented = rentedFarmsRes.count ?? 0
+      const pBBQ = bbqRes.count ?? 0
+      const pOrders = ordersRes.count ?? 0
+      const pCoupons = couponsRes.count ?? 0
+      const revenue = (revenueRes.data || []).reduce((sum: number, r: { monthly_fee: number }) => sum + (r.monthly_fee || 0), 0)
+
       setData({
-        todayNew: todayRes.count ?? 0,
-        unprocessed: unprocessedRes.count ?? 0,
-        monthConverted: convertedRes.count ?? 0,
-        rentedFarms: rentedRes.count ?? 0,
+        totalFarms: total,
+        rentedFarms: rented,
+        rentalRate: total > 0 ? Math.round((rented / total) * 100) : 0,
+        unprocessedInquiries: inquiriesRes.count ?? 0,
+        pendingBBQ: pBBQ,
+        pendingOrders: pOrders,
+        pendingCoupons: pCoupons,
+        pendingTotal: pBBQ + pOrders + pCoupons,
+        expiringThisMonth: expiringRes.count ?? 0,
+        monthlyRevenue: revenue,
       })
       setLoading(false)
     }
