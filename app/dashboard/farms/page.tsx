@@ -149,7 +149,8 @@ export default function FarmsPage() {
       )}
 
       {/* 배치도 */}
-      <FarmMap farms={farms} zones={zones} pendingOrders={pendingOrders} onFarmClick={handleFarmClick} />
+      <FarmMap farms={farms} zones={zones} pendingOrders={pendingOrders} onFarmClick={handleFarmClick}
+        onAddSite={(zoneId) => { setAddToZoneId(zoneId); setAddModalOpen(true); }} />
 
       {/* 존별 테이블 */}
       {zones.map(zone => {
