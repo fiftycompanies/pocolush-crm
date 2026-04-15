@@ -36,7 +36,6 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>('all');
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [statusModal, setStatusModal] = useState<{ member: Member; newStatus: MemberStatus } | null>(null);
 
@@ -225,26 +224,6 @@ export default function MembersPage() {
           </table>
         </div>
       )}
-
-      {selectedId && (() => {
-        const member = filtered.find(m => m.id === selectedId);
-        if (!member) return null;
-        return (
-          <div className="bg-card border rounded-xl p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-text-primary">{member.name} 상세 정보</h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-text-tertiary">주소:</span> <span className="text-text-primary">{member.address}</span></div>
-              <div><span className="text-text-tertiary">차량번호:</span> <span className="text-text-primary">{member.car_number || '-'}</span></div>
-              <div><span className="text-text-tertiary">텃밭경험:</span> <span className="text-text-primary">{member.farming_experience ? '있음' : '없음'}</span></div>
-              <div><span className="text-text-tertiary">가족 수:</span> <span className="text-text-primary">{member.family_size || '-'}</span></div>
-              <div className="col-span-2"><span className="text-text-tertiary">관심작물:</span> <span className="text-text-primary">{member.interested_crops?.join(', ') || '-'}</span></div>
-              {member.withdrawal_reason && (
-                <div className="col-span-2"><span className="text-red">탈퇴 사유:</span> <span className="text-text-primary">{member.withdrawal_reason}</span></div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       <AddMemberModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onSuccess={fetchMembers} />
       <StatusChangeModal
