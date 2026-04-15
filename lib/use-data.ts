@@ -305,7 +305,7 @@ export function useExpiringRentals(days = 30) {
       const { data: result } = await supabase
         .from('farm_rentals')
         .select('*, farm:farms(number, name), customer:customers(name, phone)')
-        .eq('status', 'active')
+        .in('status', ['active', 'expired'])
         .lte('end_date', cutoff.toISOString().split('T')[0])
         .order('end_date', { ascending: true })
       if (result) setData(result as typeof data)

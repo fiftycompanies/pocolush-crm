@@ -83,15 +83,52 @@ export default function MemberHomePage() {
     <div className="space-y-5">
       {/* 회원권 카드 */}
       {membership && member ? (
-        <Link href="/member/mypage">
-          <MembershipCard membership={membership} memberName={member.name} />
-          <p className="text-[12px] text-text-tertiary text-center mt-2">
-            탭하여 회원권 전체보기 →
-          </p>
-        </Link>
+        membership.status === 'active' ? (
+          <Link href="/member/mypage">
+            <MembershipCard membership={membership} memberName={member.name} />
+            <p className="text-[12px] text-text-tertiary text-center mt-2">
+              탭하여 회원권 전체보기 →
+            </p>
+          </Link>
+        ) : (
+          /* 만료/취소 멤버십 — 연장 유도 */
+          <div className="relative overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-b from-orange-50 to-white">
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="size-8 rounded-full bg-orange-100 flex items-center justify-center">
+                  <span className="text-orange-600 text-sm">!</span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-text-primary">회원권이 만료되었습니다</p>
+                  <p className="text-[11px] text-text-tertiary">
+                    {membership.membership_code} · {membership.end_date.replace(/-/g, '.')} 만료
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white border border-orange-100 rounded-xl p-3.5 mb-3">
+                <p className="text-xs font-semibold text-text-secondary mb-2">만료된 혜택</p>
+                <div className="space-y-1">
+                  {(membership.benefits as string[] || []).slice(0, 3).map((b, i) => (
+                    <p key={i} className="text-[11px] text-text-tertiary line-through">{b}</p>
+                  ))}
+                  {(membership.benefits as string[] || []).length > 3 && (
+                    <p className="text-[11px] text-text-tertiary">외 {(membership.benefits as string[]).length - 3}건</p>
+                  )}
+                </div>
+              </div>
+
+              <a href="tel:054-971-5274"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors active:scale-[0.98]">
+                연장 신청 문의하기
+              </a>
+              <p className="text-[10px] text-text-tertiary text-center mt-2">054-971-5274 (관리사무소)</p>
+            </div>
+          </div>
+        )
       ) : (
         <div className="bg-white border border-border rounded-2xl p-5 text-center">
-          <p className="text-sm text-text-secondary">활성 회원권이 없습니다.</p>
+          <p className="text-sm text-text-secondary">회원권이 없습니다.</p>
           <p className="text-xs text-text-tertiary mt-1">관리자에게 문의해주세요.</p>
         </div>
       )}

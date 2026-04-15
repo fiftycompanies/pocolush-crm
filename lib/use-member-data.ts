@@ -32,7 +32,8 @@ export function useMembership() {
     async function load() {
       const member = await getCurrentMember();
       if (!member) { setLoading(false); return; }
-      const { data } = await supabase
+      // active 우선, 없으면 만료/취소도 포함 (최신 1건)
+      const { data: active } = await supabase
         .from('memberships')
         .select('*, farm:farms(*)')
         .eq('member_id', member.id)
@@ -40,7 +41,20 @@ export function useMembership() {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      setMembership(data);
+      if (active) {
+        setMembership(active);
+      } else {
+        // 활성 없으면 만료된 것이라도 표시
+        const { data: latest } = await supabase
+          .from('memberships')
+          .select('*, farm:farms(*)')
+          .eq('member_id', member.id)
+          .in('status', ['expired', 'cancelled'])
+          .order('end_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setMembership(latest);
+      }
       setLoading(false);
     }
     load();
