@@ -34,6 +34,25 @@ export default function FarmsPage() {
     setDrawerOpen(true);
   };
 
+  const handleDeleteFarm = async (farm: Farm) => {
+    if (farm.status === 'rented') {
+      toast.error('임대중인 사이트는 삭제할 수 없습니다.');
+      return;
+    }
+    if (!confirm(`"${farm.name}" 사이트를 삭제하시겠습니까?`)) return;
+    const { error } = await supabase.from('farms').delete().eq('id', farm.id);
+    if (error) {
+      if (error.message?.includes('farm_rentals')) {
+        toast.error('임대 이력이 있는 사이트는 삭제할 수 없습니다.');
+      } else {
+        toast.error('삭제 실패: ' + error.message);
+      }
+    } else {
+      toast.success('사이트가 삭제되었습니다.');
+      fetchFarms();
+    }
+  };
+
   const toggleZone = (zoneId: string) => {
     setCollapsedZones(prev => {
       const next = new Set(prev);
@@ -177,6 +196,7 @@ export default function FarmsPage() {
                         <th className="text-left px-5 py-2 font-medium">임차인</th>
                         <th className="text-left px-5 py-2 font-medium">기간</th>
                         <th className="text-left px-5 py-2 font-medium">만료일</th>
+                        <th className="text-left px-5 py-2 font-medium w-16">액션</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
@@ -198,6 +218,12 @@ export default function FarmsPage() {
                             </td>
                             <td className="px-5 py-2 text-muted-foreground text-xs">
                               {rental ? format(new Date(rental.end_date), 'yy.M.d') : '-'}
+                            </td>
+                            <td className="px-5 py-2" onClick={e => e.stopPropagation()}>
+                              <button onClick={() => handleDeleteFarm(farm)}
+                                className="p-1 hover:bg-accent rounded-md" title="사이트 삭제">
+                                <Trash2 className="size-3.5 text-red" />
+                              </button>
                             </td>
                           </tr>
                         );
