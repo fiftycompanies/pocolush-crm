@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 import type { Farm, FarmZone } from '@/types';
 
 export default function FarmsPage() {
-  const { data: farms, zones, refetch: fetchFarms } = useFarms();
+  const { data: farms, zones, pendingOrders, refetch: fetchFarms } = useFarms();
   const supabase = createClient();
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -131,7 +131,7 @@ export default function FarmsPage() {
       )}
 
       {/* 배치도 */}
-      <FarmMap farms={farms} zones={zones} onFarmClick={handleFarmClick} />
+      <FarmMap farms={farms} zones={zones} pendingOrders={pendingOrders} onFarmClick={handleFarmClick} />
 
       {/* 존별 테이블 */}
       {zones.map(zone => {

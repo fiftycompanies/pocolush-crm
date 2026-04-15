@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import * as mock from './mock-data'
-import type { Customer, Inquiry, Farm, FarmRental, FarmZone, DailyCount } from '@/types'
+import type { Customer, Inquiry, Farm, FarmRental, FarmZone, ServiceOrder, DailyCount } from '@/types'
 
 const HAS_SUPABASE = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -197,6 +197,7 @@ export function useCustomers() {
 export function useFarms() {
   const [data, setData] = useState<Farm[]>([])
   const [zones, setZones] = useState<FarmZone[]>([])
+  const [pendingOrders, setPendingOrders] = useState<(ServiceOrder & { product?: { name: string }; member?: { name: string } })[]>([])
   const [loading, setLoading] = useState(true)
 
   const refetch = useCallback(async () => {
@@ -208,10 +209,11 @@ export function useFarms() {
     const { createClient } = await import('./supabase/client')
     const supabase = createClient()
 
-    const [farmsRes, rentalsRes, zonesRes] = await Promise.all([
+    const [farmsRes, rentalsRes, zonesRes, ordersRes] = await Promise.all([
       supabase.from('farms').select('*').order('number'),
       supabase.from('farm_rentals').select('*, customer:customers(name, phone)').eq('status', 'active'),
       supabase.from('farm_zones').select('*').order('sort_order'),
+      supabase.from('service_orders').select('*, product:store_products(name), member:members(name)').in('status', ['pending', 'processing']).order('created_at', { ascending: false }),
     ])
 
     if (!farmsRes.data) { setLoading(false); return }
@@ -222,6 +224,7 @@ export function useFarms() {
     })
     setData(enriched)
     setZones(zonesRes.data || [])
+    setPendingOrders(ordersRes.data || [])
     setLoading(false)
   }, [])
 
@@ -229,7 +232,7 @@ export function useFarms() {
     refetch()
   }, [refetch])
 
-  return { data, zones, loading, refetch }
+  return { data, zones, pendingOrders, loading, refetch }
 }
 
 export function useRentals(statusFilter?: string) {
