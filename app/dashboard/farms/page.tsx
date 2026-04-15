@@ -84,7 +84,6 @@ export default function FarmsPage() {
     setAddZoneOpen(true);
   };
 
-  const nextNumber = farms.length > 0 ? Math.max(...farms.map(f => f.number)) + 1 : 1;
   const totalSites = farms.length;
   const zoneCount = zones.length;
 
@@ -257,7 +256,7 @@ export default function FarmsPage() {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onAdded={fetchFarms}
-        nextNumber={nextNumber}
+        farms={farms}
         zones={zones}
         defaultZoneId={addToZoneId}
       />
