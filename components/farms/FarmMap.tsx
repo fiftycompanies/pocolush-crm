@@ -122,6 +122,7 @@ export default function FarmMap({ farms, zones = [], pendingOrders = [], onFarmC
                   const rental = farm.current_rental;
                   const hasOrders = orders.length > 0;
 
+                  const daysLeft = rental ? differenceInDays(new Date(rental.end_date), new Date()) : null;
                   return (
                     <button
                       key={farm.id}
@@ -130,16 +131,30 @@ export default function FarmMap({ farms, zones = [], pendingOrders = [], onFarmC
                       className="rounded-lg p-2 text-left cursor-pointer transition-all hover:scale-[1.04] hover:shadow-md hover:z-10 relative"
                       style={{ backgroundColor: colors.bg, border: `1.5px solid ${colors.border}` }}
                     >
-                      {/* 번호 */}
+                      {/* 번호 + 작업점 */}
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold" style={{ color: colors.text }}>{farm.number}</span>
                         {hasOrders && <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />}
                       </div>
-                      {/* 임차인 or 상태 */}
                       {rental ? (
-                        <p className="text-[9px] font-medium truncate mt-0.5" style={{ color: colors.text }}>
-                          {rental.customer?.name}
-                        </p>
+                        <>
+                          <p className="text-[9px] font-medium truncate mt-0.5" style={{ color: colors.text }}>
+                            {rental.customer?.name}
+                          </p>
+                          <p className="text-[8px] truncate mt-0.5 opacity-60" style={{ color: colors.text }}>
+                            {format(new Date(rental.start_date), 'yy.M')}~{format(new Date(rental.end_date), 'yy.M')}
+                          </p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-[8px] font-bold" style={{ color: colors.text }}>
+                              {daysLeft !== null && (daysLeft <= 0 ? '만료' : `D-${daysLeft}`)}
+                            </span>
+                            <span className={`text-[7px] px-1 rounded ${
+                              rental.payment_status === '납부완료' ? 'bg-green/15 text-green' :
+                              rental.payment_status === '미납' ? 'bg-red/15 text-red' :
+                              'bg-yellow/15 text-yellow-700'
+                            }`}>{rental.payment_status}</span>
+                          </div>
+                        </>
                       ) : (
                         <p className="text-[9px] truncate mt-0.5" style={{ color: colors.text, opacity: 0.7 }}>
                           {FARM_STATUS[farm.status]?.label}
