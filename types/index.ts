@@ -154,6 +154,44 @@ export interface Membership {
   farm?: Farm;
 }
 
+export interface TriggerErrorLog {
+  id: string;
+  function_name: string;
+  context: Record<string, unknown> | null;
+  sqlstate: string | null;
+  message: string | null;
+  detail: string | null;
+  hint: string | null;
+  exception_context: string | null;
+  acked_at: string | null;
+  acked_by: string | null;
+  created_at: string;
+}
+
+export interface TriggerErrorMonthlySummary {
+  month: string;
+  /** Postgres BIGINT — Supabase may return as string for very large values */
+  total_count: number | string;
+  /** Postgres BIGINT — Supabase may return as string for very large values */
+  unacked_count: number | string;
+  top_function: string | null;
+}
+
+export interface MembershipLog {
+  id: string;
+  membership_id: string;
+  action: 'issued' | 'suspended' | 'resumed' | 'period_updated' | 'expired' | 'manual_issue';
+  from_status: string | null;
+  to_status: string | null;
+  from_start: string | null;
+  to_start: string | null;
+  from_end: string | null;
+  to_end: string | null;
+  reason: string | null;
+  changed_by: string | null;
+  created_at: string;
+}
+
 export interface BBQFacility {
   id: string;
   number: number;

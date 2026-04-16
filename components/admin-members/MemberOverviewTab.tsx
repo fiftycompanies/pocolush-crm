@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function MemberOverviewTab({ data }: Props) {
-  const { rentals, orders, coupons, reservations, activities } = data;
+  const { rentals, orders, coupons, reservations, activities, membership } = data;
 
   const activeRentals = rentals.filter(r => r.status === 'active').length;
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
@@ -25,7 +25,20 @@ export default function MemberOverviewTab({ data }: Props) {
   const issuedCoupons = coupons.filter(c => c.status === 'issued').length;
   const usedCoupons = coupons.filter(c => c.status === 'used').length;
 
+  const membershipLabel = membership
+    ? membership.status === 'active' ? '활성'
+    : membership.status === 'cancelled' ? '정지'
+    : '만료'
+    : '미발급';
+  const membershipSub = membership ? membership.membership_code : '계약 후 자동 발급';
+  const membershipColor = !membership
+    ? '#6B7280'
+    : membership.status === 'active' ? '#0891B2'
+    : membership.status === 'cancelled' ? '#DC2626'
+    : '#6B7280';
+
   const metrics = [
+    { label: '회원권', value: membershipLabel, sub: membershipSub, color: membershipColor, bg: '#F0FDFF' },
     { label: '임대계약', value: `${activeRentals}건 활성`, sub: `총 ${rentals.length}건`, color: '#3B82F6', bg: '#EFF6FF' },
     { label: '서비스 신청', value: `${pendingOrders}건 진행`, sub: `${completedOrders}건 완료`, color: '#D97706', bg: '#FFFBEB' },
     { label: '쿠폰', value: `${issuedCoupons}장 보유`, sub: `${usedCoupons}장 사용`, color: '#8B5CF6', bg: '#F5F3FF' },
@@ -34,7 +47,7 @@ export default function MemberOverviewTab({ data }: Props) {
   return (
     <div className="space-y-5">
       {/* 메트릭 카드 */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="bg-card border rounded-xl p-4">
             <p className="text-xs text-text-tertiary mb-1">{m.label}</p>

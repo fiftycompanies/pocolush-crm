@@ -110,9 +110,20 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
       return;
     }
 
+    // 고객의 phone을 이용해 member_id 자동 매칭
+    let memberId: string | null = null;
+    const { data: custRow } = await supabase
+      .from('customers').select('phone').eq('id', customerId).maybeSingle();
+    if (custRow?.phone) {
+      const { data: memRow } = await supabase
+        .from('members').select('id').eq('phone', custRow.phone).maybeSingle();
+      memberId = memRow?.id ?? null;
+    }
+
     const { error } = await supabase.from('farm_rentals').insert({
       farm_id: form.farm_id,
       customer_id: customerId,
+      member_id: memberId,
       start_date: form.start_date,
       end_date: form.end_date,
       plan: form.plan || null,

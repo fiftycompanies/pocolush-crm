@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import { RENTAL_STATUS, PAYMENT_STATUS } from '@/lib/constants';
+import MembershipCard from '@/components/memberships/MembershipCard';
 import type { FarmRental } from '@/types';
 
 type RentalDetail = FarmRental & {
@@ -109,7 +110,7 @@ export default function RentalDetailPage() {
         <p className="text-[14px] text-text-secondary mt-0.5">{rental.customer?.phone}</p>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Contract info */}
         <Card>
           <h2 className="text-[14px] font-semibold text-text-primary mb-4">계약 정보</h2>
@@ -166,6 +167,15 @@ export default function RentalDetailPage() {
             />
           </div>
         </Card>
+
+        {/* Membership */}
+        <MembershipCard
+          memberId={rental.member_id}
+          rentalId={rental.id}
+          farmId={rental.farm_id}
+          paymentStatus={rental.payment_status}
+          onChanged={fetchData}
+        />
       </div>
 
       {/* Notes */}

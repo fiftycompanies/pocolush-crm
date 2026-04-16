@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle } from 'lucide-react';
+
+interface SidebarProps {
+  isAdmin?: boolean;
+  unackedWarnings?: number;
+}
 
 const mainNav = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
@@ -25,13 +30,17 @@ const contentNav = [
   { href: '/dashboard/blog', label: '블로그 관리', icon: FileEdit },
 ];
 
-const bottomNav = [
+const bottomNavBase = [
   { href: '/dashboard/notifications', label: '알림 설정', icon: Bell },
   { href: '/dashboard/settings', label: '설정', icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isAdmin = false, unackedWarnings = 0 }: SidebarProps) {
   const pathname = usePathname();
+
+  const bottomNav = isAdmin
+    ? [{ href: '/dashboard/warning', label: '경고', icon: AlertTriangle }, ...bottomNavBase]
+    : bottomNavBase;
 
   const renderItem = (item: typeof mainNav[0]) => {
     const isActive =
@@ -39,6 +48,8 @@ export default function Sidebar() {
         ? pathname === '/dashboard'
         : pathname.startsWith(item.href);
     const Icon = item.icon;
+    const isWarning = item.href === '/dashboard/warning';
+    const showBadge = isWarning && unackedWarnings > 0;
 
     return (
       <Link
@@ -51,7 +62,12 @@ export default function Sidebar() {
         }`}
       >
         <Icon className="size-4 shrink-0" strokeWidth={isActive ? 2 : 1.8} />
-        <span>{item.label}</span>
+        <span className="flex-1">{item.label}</span>
+        {showBadge && (
+          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red text-white text-[10px] font-semibold">
+            {unackedWarnings > 99 ? '99+' : unackedWarnings}
+          </span>
+        )}
       </Link>
     );
   };
