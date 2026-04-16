@@ -154,4 +154,58 @@
 ### QA 자산 (`/tmp/pocolush-qa/`)
 - e2e_membership.py, e2e_suspend_resume.py, e2e_warning.py
 - trigger_check.py, trigger_flip.py, verify_020.py, admin_rpc.py
+- prod_full_e2e.py, refresh_recheck.py, setup_prod.py (운영환경 QA)
 - 스크린샷 다수
+
+---
+
+## 후반 작업 (22:00–23:00)
+
+### 1. 8스킬 검수 후 보강 — migration 022 + 코드 패치 5건
+- migration 022: get_unacked_error_count + trigger_error_monthly_summary 에 admin 권한 체크 (RLS 우회 방지) + BIGINT cast
+- warning/page.tsx: RPC error throw로 안정성
+- AckOneButton: useTransition + startTransition (사이드바 즉시 갱신 보장)
+- ErrorLogTable: parseISO → Intl.DateTimeFormat KST (date-fns 의존 감소)
+- types/index.ts: total_count `number | string` (Postgres BIGINT 안전)
+- AckControls: toast 메시지 sanitize (DB 스키마 정보 누출 차단)
+- 사이드이펙트 0 보장 (verification 스킬 디버그 플랜 적용)
+- E2E 18/18 PASS (사이드바 즉시 갱신 + 7페이지 회귀)
+
+### 2. 커밋 + 푸시 + 배포
+- 커밋: `ae78593 feat: 회원권 자동 발급 + 정지/재개/기간수정 + 시스템 경고 페이지`
+- 푸시: `fbc9c3f..ae78593 main -> main` (fiftycompanies/pocolush-crm)
+- Vercel production: `pocolush-cip735bz4-fiftycompanies-projects.vercel.app` READY
+- 운영 alias: https://app.pocolush.com
+
+### 3. 변경 기능 사용설명서 작성
+- 위치: `/Users/kk/Desktop/claude/pocolush/20260416-2230_포코러쉬_CRM_변경기능_사용설명서.md` (327줄)
+- 12 섹션: 한눈에보기 / 자동발급 / 카드 / 정지 / 재개 / 기간수정 / 수동발급 / 회원metric / 시스템경고 / 데이터매칭 / 권한 / FAQ
+- 각 기능 위치/단계별 클릭 동선/주의사항/트러블슈팅 포함
+
+### 4. 실배포 app.pocolush.com 전체 E2E QA
+- Phase A: 회원권 자동 발급 풀 플로우 → `poco-365828` 자동 발급 ✅
+- Phase B: 정지/재개/기간수정 + membership_logs 4 actions ✅
+- Phase C: 회원 상세 metric 노출 ✅
+- Phase D: 시스템 경고 페이지 (배지 / 카드 / 차트 / 표 / ack / refresh) ✅
+- Phase E: 7개 dashboard 페이지 사이드바 회귀 ✅
+- 결과: **34/34 실질 PASS**
+- 성능 인사이트: router.refresh ~2s, page.reload ~8s (RSC 효율 입증)
+- 테스트 데이터 cleanup 완료
+
+---
+
+## 세션 종료 시점 시스템 상태
+
+| 항목 | 상태 |
+|------|------|
+| Git main HEAD | `ae78593 feat: 회원권 자동 발급 + 정지/재개/기간수정 + 시스템 경고 페이지` |
+| Vercel production | https://app.pocolush.com READY |
+| Supabase migrations | 001 ~ 022 모두 적용 |
+| trigger_error_logs | 0건 (테스트 데이터 cleanup 완료) |
+| 미해결 이슈 | 없음 |
+
+### 다음 세션을 위한 메모
+- 회원권 발급 시스템 안정 운영 중
+- 시스템 경고 페이지 모니터링 가능
+- P1/P2 후속 작업(이메일/Slack 알림, GitHub Actions drift check, Supabase link CI) 보류 중
+- 관리자 1명 / 운영 규모 확대 시 Phase 2 필요 검토
