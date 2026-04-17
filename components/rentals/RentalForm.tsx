@@ -91,9 +91,11 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
         setSaving(false);
         return;
       }
+      // phone 정규화: 숫자만 저장 (members.phone과 일관성)
+      const normalizedPhone = form.new_phone.replace(/[^0-9]/g, '');
       const { data: newCust, error } = await supabase
         .from('customers')
-        .upsert({ name: form.new_name, phone: form.new_phone }, { onConflict: 'phone' })
+        .upsert({ name: form.new_name, phone: normalizedPhone }, { onConflict: 'phone' })
         .select()
         .single();
       if (error) {
@@ -110,13 +112,15 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
       return;
     }
 
-    // 고객의 phone을 이용해 member_id 자동 매칭
+    // 고객의 phone을 이용해 member_id 자동 매칭 (정규화 비교)
     let memberId: string | null = null;
     const { data: custRow } = await supabase
       .from('customers').select('phone').eq('id', customerId).maybeSingle();
     if (custRow?.phone) {
+      const custNorm = custRow.phone.replace(/[^0-9]/g, '');
+      // 028 마이그 후 members.phone도 정규화된 상태 → exact 매칭
       const { data: memRow } = await supabase
-        .from('members').select('id').eq('phone', custRow.phone).maybeSingle();
+        .from('members').select('id').eq('phone', custNorm).maybeSingle();
       memberId = memRow?.id ?? null;
     }
 

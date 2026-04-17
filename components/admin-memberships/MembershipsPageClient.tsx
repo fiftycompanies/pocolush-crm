@@ -79,10 +79,20 @@ export default function MembershipsPageClient({ initialMemberId, initialExpiring
           '감사 로그에 기록됩니다. 계속하시겠습니까?'
       );
       if (!ok) return;
+      // PII 방지: filters에서 회원 검색어(이름/전화/코드) 제외, 비식별 필드만 기록
       await auditLog({
         action: 'csv_export_pii',
         resource_type: 'membership_list',
-        metadata: { row_count: rows.length, filters },
+        metadata: {
+          row_count: rows.length,
+          filters: {
+            status: filters.status,
+            plan_name: filters.planName,
+            end_before: filters.endBefore,
+            end_after: filters.endAfter,
+            member_id: filters.memberId,
+          },
+        },
       });
     }
     const header = includePII
