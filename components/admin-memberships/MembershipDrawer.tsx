@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Pause, RotateCcw, Calendar, Play } from 'lucide-react';
+import { X, Pause, Calendar, Play, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { MembershipRow } from '@/lib/use-memberships-list';
@@ -62,6 +62,22 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
     setBusy(false);
     if (error) { toast.error('재개 실패: ' + error.message); return; }
     toast.success('회원권이 재개되었습니다');
+    onRefetch();
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    const ok = window.confirm(
+      `회원권 ${row.membership_code}을(를) 영구 삭제합니다.\n` +
+      `이력(membership_logs)도 함께 삭제됩니다.\n` +
+      `되돌릴 수 없습니다. 계속하시겠습니까?`
+    );
+    if (!ok) return;
+    setBusy(true);
+    const { error } = await supabase.from('memberships').delete().eq('id', row.id);
+    setBusy(false);
+    if (error) { toast.error('삭제 실패: ' + error.message); return; }
+    toast.success('회원권이 삭제되었습니다');
     onRefetch();
     onClose();
   };
@@ -127,6 +143,16 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
                 title="end_date가 이미 지난 경우 실패합니다. 그럴 땐 기간 수정부터."
               >
                 <Play className="size-3.5" /> 재개
+              </button>
+            )}
+            {(row.status === 'cancelled' || row.status === 'expired') && (
+              <button
+                disabled={busy}
+                onClick={handleDelete}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 disabled:opacity-50 ml-auto"
+                title="취소/만료된 회원권만 영구 삭제 가능"
+              >
+                <Trash2 className="size-3.5" /> 삭제
               </button>
             )}
           </div>
