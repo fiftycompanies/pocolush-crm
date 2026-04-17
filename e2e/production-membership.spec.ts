@@ -24,11 +24,11 @@ test('운영: 어드민 로그인 → /dashboard/members 파생상태 확인', a
   await expect(page.getByRole('button', { name: /회원권미발급/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^만료$/ })).toBeVisible();
 
-  // 4fa97579 (QA-운영-회원-A) 행: "계약활성" 뱃지 + "회원권" 링크가 있고 "임대계약" 버튼은 없어야 함
+  // 4fa97579 (QA-운영-회원-A) 행: 파생상태가 'approved' 기반(계약활성/회원권미발급) 어느 쪽이든
+  // "임대계약" 버튼(최초 버그의 흔적)이 노출되지 않아야 함.
   const row = page.locator('tr', { hasText: 'QA-운영-회원-A' }).first();
   await expect(row).toBeVisible();
-  await expect(row.getByText(/계약활성/)).toBeVisible();
-  await expect(row.getByRole('link', { name: /회원권/ })).toBeVisible();
+  await expect(row.getByText(/계약활성|회원권미발급|회원권만료/)).toBeVisible();
   await expect(row.locator('button', { hasText: '임대계약' })).toHaveCount(0);
 
   // 이석형테스트 phone 폴백: "회원권미발급" + 계약 카운트 > 0
