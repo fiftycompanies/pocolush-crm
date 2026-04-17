@@ -28,10 +28,19 @@ export default function AddMemberModal({ open, onClose, onSuccess }: Props) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
+    // phone 정규화 (숫자만). members.phone/customers.phone 일관성 확보.
+    const normalizedPhone = form.phone.trim().replace(/[^0-9]/g, '');
+
+    // customers에도 동시 upsert → 나중에 farm_rentals에서 phone으로 매칭 가능
+    await supabase.from('customers').upsert(
+      { name: form.name.trim(), phone: normalizedPhone },
+      { onConflict: 'phone' }
+    );
+
     const { error } = await supabase.from('members').insert({
       user_id: null,
       name: form.name.trim(),
-      phone: form.phone.trim(),
+      phone: normalizedPhone,
       email: form.email.trim() || `admin-${Date.now()}@pocolush.com`,
       address: form.address.trim() || '-',
       car_number: form.car_number.trim() || null,

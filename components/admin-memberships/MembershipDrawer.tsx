@@ -60,7 +60,15 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
     setBusy(true);
     const { error } = await supabase.rpc('resume_membership', { p_membership_id: row.id });
     setBusy(false);
-    if (error) { toast.error('재개 실패: ' + error.message); return; }
+    if (error) {
+      const msg = error.message || '';
+      if (msg.includes('MEMBERSHIP_EXPIRED') || msg.includes('expired')) {
+        toast.error('만료된 회원권입니다. 먼저 "기간 수정"에서 종료일을 연장해 주세요.');
+      } else {
+        toast.error('재개 실패: ' + msg);
+      }
+      return;
+    }
     toast.success('회원권이 재개되었습니다');
     onRefetch();
     onClose();
