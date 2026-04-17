@@ -1,6 +1,7 @@
 'use client';
 
-import { FileText, ShoppingBag, Ticket, Flame, UserCheck, CreditCard } from 'lucide-react';
+import Link from 'next/link';
+import { FileText, ShoppingBag, Ticket, Flame, UserCheck, CreditCard, ExternalLink } from 'lucide-react';
 import type { useMemberDetail } from '@/lib/use-member-detail';
 
 const ACTIVITY_ICONS: Record<string, { icon: typeof FileText; color: string }> = {
@@ -17,7 +18,8 @@ interface Props {
 }
 
 export default function MemberOverviewTab({ data }: Props) {
-  const { rentals, orders, coupons, reservations, activities, membership } = data;
+  const { rentals, orders, coupons, reservations, activities, membership, member } = data;
+  const planName = (membership as { plan_name?: string } | null)?.plan_name || null;
 
   const activeRentals = rentals.filter(r => r.status === 'active').length;
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
@@ -30,7 +32,9 @@ export default function MemberOverviewTab({ data }: Props) {
     : membership.status === 'cancelled' ? '정지'
     : '만료'
     : '미발급';
-  const membershipSub = membership ? membership.membership_code : '계약 후 자동 발급';
+  const membershipSub = membership
+    ? `${membership.membership_code}${planName ? ` · ${planName}` : ''}`
+    : '계약 후 자동 발급';
   const membershipColor = !membership
     ? '#6B7280'
     : membership.status === 'active' ? '#0891B2'
@@ -48,13 +52,24 @@ export default function MemberOverviewTab({ data }: Props) {
     <div className="space-y-5">
       {/* 메트릭 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {metrics.map(m => (
-          <div key={m.label} className="bg-card border rounded-xl p-4">
-            <p className="text-xs text-text-tertiary mb-1">{m.label}</p>
-            <p className="text-lg font-bold" style={{ color: m.color }}>{m.value}</p>
-            <p className="text-[11px] text-text-tertiary mt-0.5">{m.sub}</p>
-          </div>
-        ))}
+        {metrics.map(m => {
+          const isMembershipCard = m.label === '회원권' && member;
+          return (
+            <div key={m.label} className="bg-card border rounded-xl p-4 flex flex-col">
+              <p className="text-xs text-text-tertiary mb-1">{m.label}</p>
+              <p className="text-lg font-bold" style={{ color: m.color }}>{m.value}</p>
+              <p className="text-[11px] text-text-tertiary mt-0.5">{m.sub}</p>
+              {isMembershipCard && (
+                <Link
+                  href={`/dashboard/memberships?member_id=${member.id}`}
+                  className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                >
+                  회원권 관리 <ExternalLink className="size-3" />
+                </Link>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* 최근 활동 타임라인 */}

@@ -2,20 +2,25 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Member, BBQReservation, ServiceOrder, CouponIssue, Notice } from '@/types';
+import type { BBQReservation, ServiceOrder, CouponIssue, Notice } from '@/types';
+import type { MemberWithStatusRow } from '@/lib/member-derived-status';
 
 const supabase = createClient();
 
+// 어드민 회원 리스트 훅 — 뷰 기반 파생상태 필드 포함
+// statusFilter는 members.status 원본 값 (파생상태 아님). pending/approved/suspended/withdrawn.
 export function useMembers(statusFilter?: string) {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberWithStatusRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from('members').select('*').order('created_at', { ascending: false });
-    if (statusFilter) query = query.eq('status', statusFilter);
-    const { data } = await query;
-    setMembers(data || []);
+    const { data, error } = await supabase.rpc('get_members_list_admin');
+    let rows = ((data as MemberWithStatusRow[]) || []).sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    if (statusFilter) rows = rows.filter(r => r.member_status === statusFilter);
+    if (error) setMembers([]); else setMembers(rows);
     setLoading(false);
   }, [statusFilter]);
 
