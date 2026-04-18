@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { format, differenceInDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -13,7 +13,13 @@ import Select from '@/components/ui/Select';
 import Card from '@/components/ui/Card';
 import { RENTAL_STATUS, PAYMENT_STATUS } from '@/lib/constants';
 import MembershipCard from '@/components/memberships/MembershipCard';
+import { auditLog } from '@/lib/audit-log';
 import type { FarmRental } from '@/types';
+
+interface LinkedMembership {
+  id: string;
+  membership_code: string;
+}
 
 type RentalDetail = FarmRental & {
   farm: { number: number; name: string; area_pyeong: number; zone?: { name: string } };
@@ -29,6 +35,14 @@ export default function RentalDetailPage() {
   const [rental, setRental] = useState<RentalDetail | null>(null);
   const [newNote, setNewNote] = useState('');
   const [notes, setNotes] = useState<{ id: string; content: string; note_type: string; created_at: string; author?: { name: string } }[]>([]);
+
+  // 결제 역방향 모달 상태
+  const [paymentModal, setPaymentModal] = useState<{
+    newStatus: string;
+    linkedMembership: LinkedMembership | null;
+  } | null>(null);
+  const [cancelMembershipChecked, setCancelMembershipChecked] = useState(true);
+  const [paymentBusy, setPaymentBusy] = useState(false);
 
   const fetchData = async () => {
     const { data } = await supabase
@@ -57,9 +71,81 @@ export default function RentalDetailPage() {
   };
 
   const handlePaymentStatusChange = async (status: string) => {
+    if (!rental) return;
+    const oldStatus = rental.payment_status;
+
+    // 역방향(납부완료 → 타상태) 전환 시 연결된 활성 회원권 조회
+    if (oldStatus === '납부완료' && status !== '납부완료' && rental.member_id) {
+      const { data: ms } = await supabase
+        .from('memberships')
+        .select('id, membership_code')
+        .eq('farm_id', rental.farm_id)
+        .eq('member_id', rental.member_id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      // 활성 회원권 있든 없든 변경 자체는 확인 모달 경유
+      setPaymentModal({ newStatus: status, linkedMembership: ms as LinkedMembership | null });
+      setCancelMembershipChecked(true); // 기본값: 함께 정지
+      return;
+    }
+
+    // 정방향 또는 회원권 연결 없음 — 즉시 변경
     await supabase.from('farm_rentals').update({ payment_status: status }).eq('id', id);
     toast.success('결제 상태가 변경되었습니다');
     fetchData();
+  };
+
+  const confirmPaymentChange = async () => {
+    if (!paymentModal || !rental) return;
+    setPaymentBusy(true);
+    const { newStatus, linkedMembership } = paymentModal;
+    const oldStatus = rental.payment_status;
+
+    try {
+      // 회원권 정지 (선택 시)
+      if (linkedMembership && cancelMembershipChecked) {
+        const { error: sErr } = await supabase.rpc('suspend_membership', {
+          p_membership_id: linkedMembership.id,
+          p_reason: `결제 ${oldStatus}→${newStatus} 연동 정지`,
+        });
+        if (sErr) {
+          toast.error('회원권 정지 실패: ' + sErr.message);
+          setPaymentBusy(false);
+          return;
+        }
+        await auditLog({
+          action: 'cancel_membership_via_payment',
+          resource_type: 'membership',
+          resource_id: linkedMembership.id,
+          metadata: {
+            rental_id: id,
+            old_payment_status: oldStatus,
+            new_payment_status: newStatus,
+            membership_code: linkedMembership.membership_code,
+          },
+        });
+      }
+
+      const { error } = await supabase
+        .from('farm_rentals')
+        .update({ payment_status: newStatus })
+        .eq('id', id);
+      if (error) {
+        toast.error('결제 상태 변경 실패: ' + error.message);
+        setPaymentBusy(false);
+        return;
+      }
+      toast.success(
+        linkedMembership && cancelMembershipChecked
+          ? '결제 상태 변경 + 회원권 정지 완료'
+          : '결제 상태가 변경되었습니다'
+      );
+      setPaymentModal(null);
+      fetchData();
+    } finally {
+      setPaymentBusy(false);
+    }
   };
 
   const handleAddNote = async () => {
@@ -211,6 +297,78 @@ export default function RentalDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* 결제 역방향 전환 확인 모달 */}
+      {paymentModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-50"
+            onClick={() => !paymentBusy && setPaymentModal(null)}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background rounded-xl w-[90vw] max-w-md z-50 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-sm font-semibold">결제 상태 변경 확인</h2>
+              <button
+                onClick={() => !paymentBusy && setPaymentModal(null)}
+                className="p-1 hover:bg-accent rounded"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4 text-sm">
+              <p>
+                결제 상태를 <b>"{rental.payment_status}"</b> → <b>"{paymentModal.newStatus}"</b> 로
+                변경합니다.
+              </p>
+
+              {paymentModal.linkedMembership ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-2">
+                  <p className="text-amber-800">
+                    연결된 활성 회원권이 있습니다:{' '}
+                    <span className="font-mono font-semibold">
+                      {paymentModal.linkedMembership.membership_code}
+                    </span>
+                  </p>
+                  <label className="flex items-start gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={cancelMembershipChecked}
+                      onChange={(e) => setCancelMembershipChecked(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-text-primary">
+                      이 회원권도 함께 <b>정지</b>합니다
+                      <span className="block text-text-tertiary mt-0.5">
+                        해제 시 결제만 변경되고 회원권은 활성 유지됩니다.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              ) : (
+                <p className="text-xs text-text-tertiary">
+                  해당 계약에 연결된 활성 회원권이 없습니다. 결제 상태만 변경됩니다.
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-border">
+              <button
+                onClick={() => setPaymentModal(null)}
+                disabled={paymentBusy}
+                className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmPaymentChange}
+                disabled={paymentBusy}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary-dark disabled:opacity-50"
+              >
+                {paymentBusy ? '처리 중...' : '변경 실행'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

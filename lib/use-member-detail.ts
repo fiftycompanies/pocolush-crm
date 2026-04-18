@@ -40,6 +40,7 @@ export function useMemberDetail(memberId: string) {
   const supabase = createClient();
   const [member, setMember] = useState<Member | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
+  const [allMemberships, setAllMemberships] = useState<Membership[]>([]);
   const [rentals, setRentals] = useState<RentalWithFarm[]>([]);
   const [orders, setOrders] = useState<OrderWithProduct[]>([]);
   const [coupons, setCoupons] = useState<CouponWithDetails[]>([]);
@@ -89,8 +90,10 @@ export function useMemberDetail(memberId: string) {
       }
     }
 
-    const activeMembership = msRes.data?.find(ms => ms.status === 'active') || msRes.data?.[0] || null;
+    const allMs = msRes.data || [];
+    const activeMembership = allMs.find(ms => ms.status === 'active') || allMs[0] || null;
     setMembership(activeMembership);
+    setAllMemberships(allMs);
     setRentals(rentalData);
     setOrders(ordRes.data || []);
     setCoupons(cpRes.data || []);
@@ -144,5 +147,5 @@ export function useMemberDetail(memberId: string) {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  return { member, membership, rentals, orders, coupons, reservations, statusLogs, activities, loading, refetch: fetchAll };
+  return { member, membership, allMemberships, rentals, orders, coupons, reservations, statusLogs, activities, loading, refetch: fetchAll };
 }

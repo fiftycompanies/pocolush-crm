@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pause, Calendar, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
+import { auditLog } from '@/lib/audit-log';
 import type { MembershipRow } from '@/lib/use-memberships-list';
 
 interface Props {
@@ -39,6 +40,11 @@ export default function BulkActionBar({ selectedIds, rows, onDone }: Props) {
     setBusy(false);
     const ok = results.filter(r => r.status === 'fulfilled').length;
     const fail = results.length - ok;
+    await auditLog({
+      action: 'bulk_extend_memberships',
+      resource_type: 'membership',
+      metadata: { total: results.length, success: ok, fail, months: extendMonths, reason: reason || null },
+    });
     if (fail > 0) {
       toast.error(`${ok}건 성공 / ${fail}건 실패. 실패 행을 확인하세요.`);
     } else {
@@ -60,6 +66,11 @@ export default function BulkActionBar({ selectedIds, rows, onDone }: Props) {
     setBusy(false);
     const ok = results.filter(x => x.status === 'fulfilled').length;
     const fail = results.length - ok;
+    await auditLog({
+      action: 'bulk_suspend_memberships',
+      resource_type: 'membership',
+      metadata: { total: results.length, success: ok, fail, reason: r || null },
+    });
     if (fail > 0) toast.error(`${ok}건 성공 / ${fail}건 실패`);
     else toast.success(`${ok}건 정지 완료`);
     onDone();

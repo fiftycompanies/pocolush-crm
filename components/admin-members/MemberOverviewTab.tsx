@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { FileText, ShoppingBag, Ticket, Flame, UserCheck, CreditCard, ExternalLink } from 'lucide-react';
 import type { useMemberDetail } from '@/lib/use-member-detail';
+import type { Membership } from '@/types';
 
 const ACTIVITY_ICONS: Record<string, { icon: typeof FileText; color: string }> = {
   rental: { icon: FileText, color: '#3B82F6' },
@@ -18,8 +19,22 @@ interface Props {
 }
 
 export default function MemberOverviewTab({ data }: Props) {
-  const { rentals, orders, coupons, reservations, activities, membership, member } = data;
+  const { rentals, orders, coupons, reservations, activities, membership, allMemberships, member } = data;
   const planName = (membership as { plan_name?: string } | null)?.plan_name || null;
+
+  // 회원권 이력 상태 스타일 + 라벨
+  const msStatusClass = (status: string): string => {
+    if (status === 'active') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (status === 'cancelled') return 'bg-red-50 text-red-700 border-red-200';
+    if (status === 'expired') return 'bg-gray-100 text-gray-600 border-gray-200';
+    return 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+  const msStatusLabel = (status: string): string => {
+    if (status === 'active') return '활성';
+    if (status === 'cancelled') return '취소';
+    if (status === 'expired') return '만료';
+    return status;
+  };
 
   const activeRentals = rentals.filter(r => r.status === 'active').length;
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
@@ -71,6 +86,48 @@ export default function MemberOverviewTab({ data }: Props) {
           );
         })}
       </div>
+
+      {/* 회원권 이력 */}
+      {member && (
+        <div className="bg-card border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-text-primary">회원권 이력 ({allMemberships.length})</h3>
+            {allMemberships.length > 5 && (
+              <Link
+                href={`/dashboard/memberships?member_id=${member.id}`}
+                className="text-xs text-primary hover:underline"
+              >
+                전체 보기 →
+              </Link>
+            )}
+          </div>
+          {allMemberships.length === 0 ? (
+            <p className="text-xs text-text-tertiary text-center py-4">발급 이력이 없습니다.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {allMemberships.slice(0, 5).map(ms => {
+                const ms2 = ms as Membership & { plan_name?: string | null };
+                return (
+                  <li key={ms.id} className="py-2.5 flex items-center gap-3 text-sm">
+                    <span className="font-mono text-xs text-text-tertiary w-28 shrink-0">
+                      {ms.membership_code}
+                    </span>
+                    <span className="text-xs flex-1 truncate">{ms2.plan_name || '-'}</span>
+                    <span className="text-xs text-text-tertiary hidden sm:inline">
+                      {ms.start_date}~{ms.end_date}
+                    </span>
+                    <span
+                      className={`inline-flex text-[11px] font-medium px-2 py-0.5 rounded-full border ${msStatusClass(ms.status)}`}
+                    >
+                      {msStatusLabel(ms.status)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* 최근 활동 타임라인 */}
       <div className="bg-card border rounded-xl p-5">

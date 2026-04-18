@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck } from 'lucide-react';
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -32,6 +32,7 @@ const contentNav = [
 ];
 
 const bottomNavBase = [
+  { href: '/dashboard/audit-logs', label: '감사 로그', icon: ClipboardCheck },
   { href: '/dashboard/notifications', label: '알림 설정', icon: Bell },
   { href: '/dashboard/settings', label: '설정', icon: Settings },
 ];

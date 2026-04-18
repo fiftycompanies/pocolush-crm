@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Pause, Calendar, Play, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { X, Pause, Calendar, Play, Trash2, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
+import { auditLog } from '@/lib/audit-log';
 import type { MembershipRow } from '@/lib/use-memberships-list';
 import ExtendPeriodModal from './ExtendPeriodModal';
 
@@ -31,6 +33,7 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
+  const [linkedRentalId, setLinkedRentalId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -40,6 +43,28 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
       .order('created_at', { ascending: false })
       .then(({ data }) => setLogs((data as LogEntry[]) || []));
   }, [supabase, row.id]);
+
+  // 연결된 farm_rental 역추적 (farm_id + member_id → 최신 active)
+  useEffect(() => {
+    if (!row.farm_id || !row.member_id) {
+      setLinkedRentalId(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('farm_rentals')
+      .select('id')
+      .eq('farm_id', row.farm_id)
+      .eq('member_id', row.member_id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setLinkedRentalId((data as { id: string } | null)?.id ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [supabase, row.id, row.farm_id, row.member_id]);
 
   const handleSuspend = async () => {
     const reason = window.prompt('정지 사유를 입력하세요', '');
@@ -51,6 +76,12 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
     });
     setBusy(false);
     if (error) { toast.error('정지 실패: ' + error.message); return; }
+    await auditLog({
+      action: 'suspend_membership',
+      resource_type: 'membership',
+      resource_id: row.id,
+      metadata: { membership_code: row.membership_code, reason: reason || null },
+    });
     toast.success('회원권이 정지되었습니다');
     onRefetch();
     onClose();
@@ -69,6 +100,12 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
       }
       return;
     }
+    await auditLog({
+      action: 'resume_membership',
+      resource_type: 'membership',
+      resource_id: row.id,
+      metadata: { membership_code: row.membership_code },
+    });
     toast.success('회원권이 재개되었습니다');
     onRefetch();
     onClose();
@@ -85,6 +122,16 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
     const { error } = await supabase.from('memberships').delete().eq('id', row.id);
     setBusy(false);
     if (error) { toast.error('삭제 실패: ' + error.message); return; }
+    await auditLog({
+      action: 'delete_membership',
+      resource_type: 'membership',
+      resource_id: row.id,
+      metadata: {
+        membership_code: row.membership_code,
+        previous_status: row.status,
+        plan_name: row.plan_name,
+      },
+    });
     toast.success('회원권이 삭제되었습니다');
     onRefetch();
     onClose();
@@ -115,6 +162,19 @@ export default function MembershipDrawer({ row, onClose, onRefetch }: Props) {
             <dd className="col-span-2">{row.start_date} ~ {row.end_date}</dd>
             <dt className="text-text-tertiary">상태</dt>
             <dd className="col-span-2">{row.status}</dd>
+            <dt className="text-text-tertiary">계약</dt>
+            <dd className="col-span-2">
+              {linkedRentalId ? (
+                <Link
+                  href={`/dashboard/rentals/${linkedRentalId}`}
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  계약 상세 <ExternalLink className="size-3" />
+                </Link>
+              ) : (
+                <span className="text-text-tertiary">연결 없음</span>
+              )}
+            </dd>
           </dl>
 
           <div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
+import { auditLog } from '@/lib/audit-log';
 
 interface Rental {
   id: string;
@@ -56,9 +57,15 @@ export default function IssueMembershipModal({ onClose, onSuccess }: Props) {
   const handleIssue = async () => {
     if (!selectedId) return;
     setBusy(true);
-    const { error } = await supabase.rpc('issue_membership', { p_rental_id: selectedId });
+    const { data, error } = await supabase.rpc('issue_membership', { p_rental_id: selectedId });
     setBusy(false);
     if (error) { toast.error('발급 실패: ' + error.message); return; }
+    await auditLog({
+      action: 'issue_membership_manual',
+      resource_type: 'membership',
+      resource_id: typeof data === 'string' ? data : null,
+      metadata: { rental_id: selectedId },
+    });
     toast.success('회원권이 발급되었습니다');
     onSuccess();
   };

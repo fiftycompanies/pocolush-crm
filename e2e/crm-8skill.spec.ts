@@ -93,19 +93,27 @@ test.describe('8스킬 E2E 검증', () => {
     await expect(page.locator('input[placeholder*="신청자명"]')).toBeVisible();
   });
 
-  // #4. 회원 상태 변경
-  test('#4 회원 상태 드롭다운 + 회원추가 버튼', async ({ page }) => {
+  // #4. 회원 파생상태 필터 (기존 상태 드롭다운은 제거됨)
+  test('#4 회원 파생상태 필터 + 회원추가 버튼', async ({ page }) => {
     await page.goto(`${BASE}/dashboard/members`);
     await expect(page.locator('h1')).toContainText('회원 관리');
-    // 회원 추가 버튼 확인 (#9)
-    await expect(page.locator('button', { hasText: '회원 추가' })).toBeVisible();
-    // 승인 탭
-    await page.locator('button', { hasText: /^승인$/ }).click();
-    await page.waitForTimeout(1000);
-    // 상태 드롭다운 존재 확인
+
+    // 회원 추가 버튼 확인
+    await expect(page.getByRole('button', { name: /회원 추가/ })).toBeVisible();
+
+    // 파생상태 필터 탭 7종 노출
+    await expect(page.getByRole('button', { name: /^전체$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /가입대기/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /승인\(계약전\)/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /계약활성/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /회원권미발급/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^만료$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^정지$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^탈퇴$/ })).toBeVisible();
+
+    // 기존 상태 드롭다운은 제거됐는지 확인 (테이블 내 select 0)
     const selects = page.locator('table select');
-    const count = await selects.count();
-    expect(count).toBeGreaterThanOrEqual(0); // 승인 회원 없을 수도 있음
+    expect(await selects.count()).toBe(0);
   });
 
   // #6. 농장존

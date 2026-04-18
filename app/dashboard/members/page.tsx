@@ -19,6 +19,7 @@ import {
 } from '@/lib/member-derived-status';
 import ExportButton from '@/components/ui/ExportButton';
 import AddMemberModal from '@/components/admin-members/AddMemberModal';
+import { auditLog } from '@/lib/audit-log';
 
 type Row = MemberWithStatusRow & { derived: MemberDerivedStatus };
 
@@ -134,6 +135,12 @@ export default function MembersPage() {
       p_reason: '리스트에서 재개',
     });
     if (error) { toast.error('재개 실패: ' + error.message); return; }
+    await auditLog({
+      action: 'reactivate_member',
+      resource_type: 'member',
+      resource_id: member.id,
+      metadata: { member_name: member.name, reason: '리스트에서 재개' },
+    });
     toast.success(`${member.name}님이 재개되었습니다`);
     fetchMembers();
   };
