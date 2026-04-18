@@ -41,12 +41,17 @@ export default function NoticeForm({ initialData, onSave, saving, onBack, title 
         <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용 (마크다운 지원) *"
           rows={12}
           className="w-full border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-y font-mono" />
+        <p className="text-[11px] text-text-tertiary mt-1.5">
+          💡 빈 줄로 문단 구분, 줄 끝에 공백 2칸이면 줄바꿈. Markdown 지원: **굵게**, ## 제목, - 목록
+        </p>
       </div>
 
       {content && (
         <div className="bg-card border rounded-xl p-5">
           <p className="text-xs font-medium text-text-tertiary mb-3">미리보기</p>
-          <div className="prose prose-sm max-w-none"><Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown></div>
+          <div className="prose prose-sm max-w-none" style={{ whiteSpace: 'pre-wrap' }}>
+            <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
+          </div>
         </div>
       )}
 

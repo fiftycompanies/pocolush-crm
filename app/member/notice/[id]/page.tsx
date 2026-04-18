@@ -39,7 +39,7 @@ export default function NoticeDetailPage({ params }: { params: Promise<{ id: str
           <span className="text-[11px] text-text-tertiary">{notice.published_at ? new Date(notice.published_at).toLocaleDateString('ko-KR') : ''}</span>
         </div>
         <h1 className="text-lg font-bold text-text-primary mb-4">{notice.title}</h1>
-        <div className="prose prose-sm max-w-none text-text-primary">
+        <div className="prose prose-sm max-w-none text-text-primary" style={{ whiteSpace: 'pre-wrap' }}>
           <Markdown
             remarkPlugins={[remarkGfm]}
             urlTransform={(url) => {
