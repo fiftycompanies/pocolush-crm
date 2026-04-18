@@ -1,56 +1,57 @@
-'use client';
+import type { Metadata } from 'next';
+import { createClient } from '@/lib/supabase/server';
+import NoticeDetailClient from '@/components/notices/NoticeDetailClient';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { NOTICE_CATEGORIES } from '@/lib/member-constants';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import type { Notice, NoticeCategory } from '@/types';
+export const revalidate = 60;
 
-export default function NoticeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const router = useRouter();
-  const supabase = createClient();
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [loading, setLoading] = useState(true);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const supabase = await createClient();
+    const { data: notice } = await supabase
+      .from('notices')
+      .select('title, content')
+      .eq('id', id)
+      .eq('is_published', true)
+      .maybeSingle();
 
-  useEffect(() => {
-    supabase.from('notices').select('*').eq('id', id).maybeSingle().then(({ data }) => {
-      setNotice(data); setLoading(false);
-    });
-  }, [supabase, id]);
+    if (!notice) {
+      return { title: '공지사항을 찾을 수 없습니다' };
+    }
 
-  if (loading) return <div className="flex items-center justify-center py-20"><p className="text-sm text-text-secondary">불러오는 중...</p></div>;
-  if (!notice) return <div className="text-center py-20"><p className="text-sm text-text-tertiary">공지를 찾을 수 없습니다.</p></div>;
+    const desc = (notice.content as string)
+      .replace(/[#*`_~]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 120);
 
-  const cat = NOTICE_CATEGORIES[notice.category as NoticeCategory];
+    const ogUrl = `/api/og?title=${encodeURIComponent(notice.title as string)}&subtitle=${encodeURIComponent('POCOLUSH 공지사항')}`;
 
-  return (
-    <div className="space-y-4">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-text-secondary hover:text-text-primary text-sm">
-        <ArrowLeft className="size-4" /> 목록으로
-      </button>
+    return {
+      title: notice.title as string,
+      description: desc,
+      openGraph: {
+        title: notice.title as string,
+        description: desc,
+        images: [{ url: ogUrl, width: 1200, height: 630 }],
+        type: 'article',
+      },
+    };
+  } catch (err) {
+    console.error('[notice/generateMetadata] failed', err);
+    return { title: '공지사항' };
+  }
+}
 
-      <div className="bg-white border border-border rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: cat?.color, backgroundColor: cat?.bg }}>{cat?.label}</span>
-          <span className="text-[11px] text-text-tertiary">{notice.published_at ? new Date(notice.published_at).toLocaleDateString('ko-KR') : ''}</span>
-        </div>
-        <h1 className="text-lg font-bold text-text-primary mb-4">{notice.title}</h1>
-        <div className="prose prose-sm max-w-none text-text-primary" style={{ whiteSpace: 'pre-wrap' }}>
-          <Markdown
-            remarkPlugins={[remarkGfm]}
-            urlTransform={(url) => {
-              if (/^(https?|mailto):/.test(url)) return url;
-              return '';
-            }}
-          >
-            {notice.content}
-          </Markdown>
-        </div>
-      </div>
-    </div>
-  );
+export default async function NoticeDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <NoticeDetailClient id={id} />;
 }

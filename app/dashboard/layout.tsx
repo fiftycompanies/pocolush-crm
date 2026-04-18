@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
 import { createClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = {
+  title: 'POCOLUSH CRM',
+  description: '포코러쉬 운영 관리 시스템',
+  robots: { index: false, follow: false },
+};
 
 export const dynamic = 'force-dynamic';
 
