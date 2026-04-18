@@ -106,7 +106,8 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
       customerId = newCust.id;
     }
 
-    if (!form.farm_id || !customerId || !form.start_date || !form.end_date || !form.monthly_fee) {
+    // R5: farm_id는 선택사항 (나중에 할당 가능)
+    if (!customerId || !form.start_date || !form.end_date || !form.monthly_fee) {
       toast.error('필수 항목을 모두 입력해주세요');
       setSaving(false);
       return;
@@ -125,7 +126,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
     }
 
     const { error } = await supabase.from('farm_rentals').insert({
-      farm_id: form.farm_id,
+      farm_id: form.farm_id || null,
       customer_id: customerId,
       member_id: memberId,
       start_date: form.start_date,
@@ -152,16 +153,23 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
-      {/* 농장 선택 */}
+      {/* 농장 선택 (선택사항) */}
       <div className="bg-card border rounded-xl p-5">
-        <h3 className="text-[14px] font-semibold text-text-primary mb-4">농장 선택</h3>
+        <h3 className="text-[14px] font-semibold text-text-primary mb-4">
+          농장 선택 <span className="text-xs text-text-tertiary font-normal">(나중에 할당 가능)</span>
+        </h3>
         <Select
           options={farms.map((f) => ({ value: f.id, label: `${f.number}번 — ${f.name} (${f.area_pyeong}평)` }))}
-          placeholder="농장을 선택하세요"
+          placeholder="농장을 선택하세요 (미선택 시 나중에 할당)"
           value={form.farm_id}
           onChange={(e) => setForm({ ...form, farm_id: e.target.value })}
           className="w-full"
         />
+        {!form.farm_id && (
+          <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+            📌 농장 미할당 상태로 저장됩니다. 나중에 임대 상세에서 농장을 할당하면 회원권이 자동 발급됩니다.
+          </p>
+        )}
       </div>
 
       {/* 고객 정보 */}

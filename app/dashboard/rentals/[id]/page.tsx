@@ -70,6 +70,26 @@ export default function RentalDetailPage() {
     fetchData();
   };
 
+  // R5: farm_id 할당 (나중에 할당 경로)
+  const [availableFarms, setAvailableFarms] = useState<{ id: string; number: number; name: string; area_pyeong: number }[]>([]);
+  useEffect(() => {
+    if (rental && !rental.farm_id) {
+      supabase.from('farms')
+        .select('id, number, name, area_pyeong')
+        .in('status', ['available', 'maintenance'])
+        .order('number')
+        .then(({ data }) => setAvailableFarms((data as typeof availableFarms) || []));
+    }
+  }, [rental, supabase]);
+
+  const handleAssignFarm = async (farmId: string) => {
+    if (!farmId) return;
+    const { error } = await supabase.from('farm_rentals').update({ farm_id: farmId }).eq('id', id);
+    if (error) { toast.error('농장 할당 실패: ' + error.message); return; }
+    toast.success('농장이 할당되었습니다. (납부완료면 회원권이 자동 발급됩니다)');
+    fetchData();
+  };
+
   const handlePaymentStatusChange = async (status: string) => {
     if (!rental) return;
     const oldStatus = rental.payment_status;
@@ -182,7 +202,11 @@ export default function RentalDetailPage() {
       {/* Header */}
       <Card>
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="text-[20px] font-bold text-primary tracking-tight">{rental.farm?.zone?.name} {rental.farm?.number}번</span>
+          {rental.farm ? (
+            <span className="text-[20px] font-bold text-primary tracking-tight">{rental.farm?.zone?.name} {rental.farm?.number}번</span>
+          ) : (
+            <span className="text-[20px] font-bold text-amber-700 tracking-tight">농장 미할당</span>
+          )}
           <Badge label={statusMeta.label} color={statusMeta.color} bg={statusMeta.bg} />
           {rental.status === 'active' && (
             <Badge
@@ -194,6 +218,27 @@ export default function RentalDetailPage() {
         </div>
         <h1 className="text-[20px] font-bold text-text-primary tracking-tight">{rental.customer?.name}</h1>
         <p className="text-[14px] text-text-secondary mt-0.5">{rental.customer?.phone}</p>
+
+        {/* R5: 농장 미할당 시 할당 드롭다운 */}
+        {!rental.farm_id && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="text-[12px] text-amber-800 mb-2">
+              📌 이 계약에는 농장이 할당되지 않았습니다. 아래에서 농장을 선택하면 회원권이 자동 발급됩니다.
+            </p>
+            <select
+              onChange={(e) => handleAssignFarm(e.target.value)}
+              className="w-full h-9 px-3 border border-border rounded-lg text-sm"
+              defaultValue=""
+            >
+              <option value="" disabled>농장을 선택하세요</option>
+              {availableFarms.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.number}번 — {f.name} ({f.area_pyeong}평)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -202,7 +247,7 @@ export default function RentalDetailPage() {
           <h2 className="text-[14px] font-semibold text-text-primary mb-4">계약 정보</h2>
           <div className="bg-bg-muted rounded-xl p-4 space-y-0">
             {[
-              ['농장', `${rental.farm?.name} (${rental.farm?.area_pyeong}평)`],
+              ['농장', rental.farm ? `${rental.farm.name} (${rental.farm.area_pyeong}평)` : '미할당'],
               ['플랜', rental.plan || '-'],
               ['기간', `${format(new Date(rental.start_date), 'yyyy.M.d', { locale: ko })} ~ ${format(new Date(rental.end_date), 'yyyy.M.d', { locale: ko })}`],
               ['결제 수단', rental.payment_method],
