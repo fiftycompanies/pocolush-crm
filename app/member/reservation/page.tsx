@@ -21,6 +21,9 @@ export default function ReservationPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  // R2: 활성 상품 + 이벤트 가격
+  const [activeProduct, setActiveProduct] = useState<{ id: string; name: string; base_price: number; duration_minutes: number } | null>(null);
+  const [eventPrice, setEventPrice] = useState<number | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -31,10 +34,26 @@ export default function ReservationPage() {
       }
       const { data: f } = await supabase.from('bbq_facilities').select('*').order('number');
       setFacilities(f || []);
+      // R2: 활성 바베큐 상품 (is_active 가장 최근)
+      const { data: p } = await supabase
+        .from('bbq_products')
+        .select('id, name, base_price, duration_minutes')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setActiveProduct(p as typeof activeProduct);
       setLoading(false);
     }
     init();
   }, [supabase]);
+
+  // R2: 선택한 날짜 기준 이벤트 가격 조회
+  useEffect(() => {
+    if (!activeProduct || !selectedDate) { setEventPrice(null); return; }
+    supabase.rpc('get_bbq_reservation_price', { p_product_id: activeProduct.id, p_date: selectedDate })
+      .then(({ data }) => setEventPrice(typeof data === 'number' ? data : null));
+  }, [supabase, activeProduct, selectedDate]);
 
   const fetchReservations = useCallback(async () => {
     if (!selectedDate || selectedSlot === null) return;
@@ -103,7 +122,10 @@ export default function ReservationPage() {
     return <div className="flex items-center justify-center py-20"><p className="text-sm text-text-secondary">불러오는 중...</p></div>;
   }
 
-  const price = facilities.find(f => f.number === selectedBBQ)?.price || 30000;
+  // R2: 이벤트 가격 우선, 없으면 상품 base_price, 마지막 폴백은 시설 가격
+  const price = eventPrice ?? activeProduct?.base_price ?? facilities.find(f => f.number === selectedBBQ)?.price ?? 30000;
+  const priceIsEvent = eventPrice !== null && activeProduct && eventPrice !== activeProduct.base_price;
+  const durationMin = activeProduct?.duration_minutes ?? 170;
 
   return (
     <div className="space-y-5">
@@ -111,7 +133,23 @@ export default function ReservationPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-text-primary">바베큐장 예약</h1>
-          <p className="text-xs text-text-secondary mt-0.5">{price.toLocaleString()}원 · 2시간 50분 · 현장결제</p>
+          <p className="text-xs text-text-secondary mt-0.5">
+            {priceIsEvent ? (
+              <>
+                <span className="font-semibold text-emerald-600">
+                  🎉 {price === 0 ? '무료' : `${price.toLocaleString()}원`}
+                </span>
+                {activeProduct && (
+                  <span className="text-text-tertiary line-through ml-1.5">
+                    {activeProduct.base_price.toLocaleString()}원
+                  </span>
+                )}
+                {` · ${Math.floor(durationMin / 60)}시간 ${durationMin % 60}분 · 현장결제`}
+              </>
+            ) : (
+              `${price.toLocaleString()}원 · ${Math.floor(durationMin / 60)}시간 ${durationMin % 60}분 · 현장결제`
+            )}
+          </p>
         </div>
         <a href="/member/reservation/history" className="text-xs text-primary hover:underline">예약 내역 &gt;</a>
       </div>
@@ -160,7 +198,12 @@ export default function ReservationPage() {
               <div className="flex justify-between"><span className="text-text-secondary">날짜</span><span className="font-medium">{selectedDate.replace(/-/g, '.')}</span></div>
               <div className="flex justify-between"><span className="text-text-secondary">시간</span><span className="font-medium">{TIME_SLOTS[selectedSlot as 1|2|3]?.label} {TIME_SLOTS[selectedSlot as 1|2|3]?.time}</span></div>
               <div className="flex justify-between"><span className="text-text-secondary">장소</span><span className="font-medium">바베큐장 {selectedBBQ}번</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">가격</span><span className="font-medium">{price.toLocaleString()}원 (현장결제)</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">가격</span>
+                <span className="font-medium">
+                  {price === 0 ? '무료' : `${price.toLocaleString()}원`}
+                  {priceIsEvent ? ' (이벤트 적용)' : ' (현장결제)'}
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setShowConfirm(false)} className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-text-secondary hover:bg-bg-hover transition-colors">

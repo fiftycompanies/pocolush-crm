@@ -21,6 +21,7 @@ const memberNav = [
   { href: '/dashboard/memberships', label: '회원권 관리', icon: Award },
   { href: '/dashboard/requests', label: '신청 관리', icon: ClipboardList },
   { href: '/dashboard/bbq', label: '바베큐 설정', icon: Flame },
+  { href: '/dashboard/bbq-products', label: '바베큐 상품', icon: Flame },
   { href: '/dashboard/store', label: '스토어 설정', icon: ShoppingBag },
   { href: '/dashboard/plans', label: '플랜 관리', icon: CreditCard },
   { href: '/dashboard/coupons', label: '쿠폰 설정', icon: Ticket },
