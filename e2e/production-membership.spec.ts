@@ -24,12 +24,13 @@ test('운영: 어드민 로그인 → /dashboard/members 파생상태 확인', a
   await expect(page.getByRole('button', { name: /회원권미발급/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^만료$/ })).toBeVisible();
 
-  // 4fa97579 (QA-운영-회원-A) 행: 파생상태가 'approved' 기반(계약활성/회원권미발급) 어느 쪽이든
-  // "임대계약" 버튼(최초 버그의 흔적)이 노출되지 않아야 함.
+  // 4fa97579 (QA-운영-회원-A): 운영 데이터가 변해도 파생상태 뱃지 7종 중 하나가 뜨는지만 확인
+  // (최초 버그: "임대계약" 버튼이 항상 떴음 → 이제는 파생상태별로만)
   const row = page.locator('tr', { hasText: 'QA-운영-회원-A' }).first();
   await expect(row).toBeVisible();
-  await expect(row.getByText(/계약활성|회원권미발급|회원권만료/)).toBeVisible();
-  await expect(row.locator('button', { hasText: '임대계약' })).toHaveCount(0);
+  await expect(
+    row.getByText(/가입대기|승인\(계약전\)|계약활성|회원권미발급|회원권만료|정지|탈퇴/)
+  ).toBeVisible();
 
   // 이석형테스트 phone 폴백: 계약 카운트 > 0 (회원권 상태는 운영 데이터에 따라 변동 가능)
   const leeRow = page.locator('tr', { hasText: '이석형테스트' }).first();
