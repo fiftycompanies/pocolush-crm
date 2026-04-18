@@ -139,7 +139,7 @@ export default function MembersPage() {
       action: 'reactivate_member',
       resource_type: 'member',
       resource_id: member.id,
-      metadata: { member_name: member.name, reason: '리스트에서 재개' },
+      metadata: { reason: '리스트에서 재개' },
     });
     toast.success(`${member.name}님이 재개되었습니다`);
     fetchMembers();
