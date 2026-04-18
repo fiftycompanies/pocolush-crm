@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Flame, ShoppingBag, Ticket, Search } from 'lucide-react';
+import { Flame, ShoppingBag, Ticket, Search, X, Copy } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRequests, type RequestType, type UnifiedStatus } from '@/lib/use-requests';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { auditLog } from '@/lib/audit-log';
 
 const TYPE_TABS = [
   { key: '', label: '전체' },
@@ -17,6 +18,7 @@ const TYPE_TABS = [
 
 const STATUS_TABS = [
   { key: '', label: '전체' },
+  { key: 'payment_pending', label: '결제 필요' },
   { key: 'pending', label: '대기' },
   { key: 'processing', label: '처리중' },
   { key: 'completed', label: '완료' },
@@ -30,6 +32,7 @@ const TYPE_META: Record<string, { icon: typeof Flame; color: string; label: stri
 };
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+  payment_pending: { label: '결제 필요', color: '#DC2626', bg: '#FEF2F2' },
   pending: { label: '대기', color: '#D97706', bg: '#FFFBEB' },
   processing: { label: '처리중', color: '#3B82F6', bg: '#EFF6FF' },
   completed: { label: '완료', color: '#059669', bg: '#ECFDF5' },
@@ -47,6 +50,25 @@ export default function RequestsPage() {
   const [typeFilter, setTypeFilter] = useState(urlType);
   const [statusFilter, setStatusFilter] = useState(urlStatus);
   const [search, setSearch] = useState('');
+  const [bankInfoOpen, setBankInfoOpen] = useState<string | null>(null);
+  const [bankInfo, setBankInfo] = useState<{ bank_name?: string; bank_account?: string; bank_holder?: string; bank_note?: string }>({});
+
+  useEffect(() => {
+    supabase.from('settings').select('key, value').in('key', ['bank_name', 'bank_account', 'bank_holder', 'bank_note']).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data || []).forEach((r: { key: string; value: string }) => { map[r.key] = r.value; });
+      setBankInfo(map);
+    });
+  }, [supabase]);
+
+  const openBankInfo = async (orderId: string) => {
+    setBankInfoOpen(orderId);
+    await auditLog({
+      action: 'view_payment_info',
+      resource_type: 'service_order',
+      resource_id: orderId,
+    });
+  };
 
   useEffect(() => {
     setTypeFilter(searchParams.get('type') || '');
@@ -214,18 +236,22 @@ export default function RequestsPage() {
                         </select>
                       )}
                       {/* 스토어 액션 */}
-                      {r.type === 'order' && (r.rawStatus === 'pending' || r.rawStatus === 'processing') && (
-                        <div className="flex gap-1">
+                      {r.type === 'order' && (r.rawStatus === 'payment_pending' || r.rawStatus === 'pending' || r.rawStatus === 'processing') && (
+                        <div className="flex gap-1 flex-wrap">
                           <select defaultValue="" onChange={e => { if (e.target.value) handleOrderStatus(r.id, e.target.value); e.target.value = ''; }}
                             className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary">
                             <option value="" disabled>상태</option>
-                            {r.rawStatus === 'pending' && <option value="processing">처리시작</option>}
+                            {(r.rawStatus === 'payment_pending' || r.rawStatus === 'pending') && <option value="processing">입금 확인 → 대기</option>}
                             <option value="completed">완료</option>
                             <option value="cancelled">취소</option>
                           </select>
+                          {r.rawStatus === 'payment_pending' && (
+                            <button onClick={() => openBankInfo(r.id)}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 font-medium border border-red-200">계좌 안내</button>
+                          )}
                           {r.paymentStatus !== '납부완료' && (
                             <button onClick={() => handlePayment(r.id, '납부완료')}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-green-light text-green font-medium">결제</button>
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-green-light text-green font-medium">결제 처리</button>
                           )}
                         </div>
                       )}
@@ -241,6 +267,64 @@ export default function RequestsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* 계좌 안내 팝업 */}
+      {bankInfoOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setBankInfoOpen(null)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background rounded-xl w-[90vw] max-w-md z-50 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-sm font-semibold">결제 계좌 안내</h2>
+              <button onClick={() => setBankInfoOpen(null)} className="p-1 hover:bg-accent rounded">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3 text-sm">
+              <div className="bg-bg-muted rounded-xl p-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">은행</span>
+                  <span className="font-medium">{bankInfo.bank_name || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-secondary">계좌번호</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-semibold">{bankInfo.bank_account || '-'}</span>
+                    <button
+                      onClick={() => {
+                        if (bankInfo.bank_account) {
+                          navigator.clipboard.writeText(bankInfo.bank_account);
+                          toast.success('복사됨');
+                        }
+                      }}
+                      className="p-1 hover:bg-accent rounded"
+                      title="복사"
+                    >
+                      <Copy className="size-3.5 text-text-tertiary" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">예금주</span>
+                  <span className="font-medium">{bankInfo.bank_holder || '-'}</span>
+                </div>
+              </div>
+              {bankInfo.bank_note && (
+                <p className="text-xs text-text-secondary bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  💡 {bankInfo.bank_note}
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end p-4 border-t border-border">
+              <button
+                onClick={() => setBankInfoOpen(null)}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary-dark"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

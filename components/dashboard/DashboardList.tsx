@@ -56,7 +56,7 @@ export default function DashboardList() {
       supabase.from('farm_zones_active').select('*').order('sort_order'),
       supabase.from('farm_rentals').select('*, customer:customers(name, phone)').eq('status', 'active'),
       supabase.from('bbq_reservations').select('*, member:members(name)').eq('status', 'confirmed').gte('reservation_date', today).order('reservation_date').limit(20),
-      supabase.from('service_orders').select('*, member:members(name), product:store_products(name)').in('status', ['pending', 'processing']).order('created_at', { ascending: false }).limit(20),
+      supabase.from('service_orders').select('*, member:members(name), product:store_products(name)').in('status', ['payment_pending', 'processing']).order('created_at', { ascending: false }).limit(20),
       supabase.from('coupon_issues').select('*, member:members(name), coupon:coupons(name)').eq('status', 'issued').order('created_at', { ascending: false }).limit(20),
       supabase.from('inquiries').select('*, customer:customers(name, phone)').in('status', ['new', 'contacted']).order('created_at', { ascending: false }).limit(20),
     ]);

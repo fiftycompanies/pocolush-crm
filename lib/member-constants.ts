@@ -21,10 +21,12 @@ export const TIME_SLOTS = {
 } as const;
 
 export const ORDER_STATUS = {
-  pending: { label: '대기', color: '#D97706', bg: '#FFFBEB' },
-  processing: { label: '처리중', color: '#3B82F6', bg: '#EFF6FF' },
+  payment_pending: { label: '결제 필요', color: '#DC2626', bg: '#FEF2F2' },
+  processing: { label: '대기', color: '#D97706', bg: '#FFFBEB' },
   completed: { label: '완료', color: '#059669', bg: '#ECFDF5' },
   cancelled: { label: '취소', color: '#6B7280', bg: '#F3F4F6' },
+  // 레거시 호환 (UI에 혹시 남아있을 경우)
+  pending: { label: '대기', color: '#D97706', bg: '#FFFBEB' },
 } as const;
 
 export const PAYMENT_STATUS = {

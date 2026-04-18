@@ -55,7 +55,7 @@ export function useDashboardStats() {
         supabase.from('farms_active').select('id', { count: 'exact', head: true }).eq('status', 'rented'),
         supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
         supabase.from('bbq_reservations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').gte('reservation_date', today.toISOString().split('T')[0]),
-        supabase.from('service_orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
+        supabase.from('service_orders').select('id', { count: 'exact', head: true }).in('status', ['payment_pending', 'processing']),
         supabase.from('coupon_issues').select('id', { count: 'exact', head: true }).eq('status', 'issued'),
         supabase.from('farm_rentals').select('id', { count: 'exact', head: true }).eq('status', 'active').lte('end_date', monthEnd).gte('end_date', monthStart),
         supabase.from('farm_rentals').select('monthly_fee').eq('payment_status', '납부완료').gte('created_at', monthStart),
@@ -253,7 +253,7 @@ export function useFarms() {
       supabase.from('farms_active').select('*').order('number'),
       supabase.from('farm_rentals').select('*, customer:customers(name, phone)').eq('status', 'active'),
       supabase.from('farm_zones_active').select('*').order('sort_order'),
-      supabase.from('service_orders').select('*, product:store_products(name), member:members(name)').in('status', ['pending', 'processing']).order('created_at', { ascending: false }),
+      supabase.from('service_orders').select('*, product:store_products(name), member:members(name)').in('status', ['payment_pending', 'processing']).order('created_at', { ascending: false }),
     ])
 
     if (!farmsRes.data) { setLoading(false); return }
