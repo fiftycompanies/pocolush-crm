@@ -52,8 +52,8 @@ export default function DashboardList() {
     const today = new Date().toISOString().split('T')[0];
 
     const [farmsRes, zonesRes, rentalsRes, bbqRes, ordersRes, couponsRes, inqRes] = await Promise.all([
-      supabase.from('farms').select('*').order('number'),
-      supabase.from('farm_zones').select('*').order('sort_order'),
+      supabase.from('farms_active').select('*').order('number'),
+      supabase.from('farm_zones_active').select('*').order('sort_order'),
       supabase.from('farm_rentals').select('*, customer:customers(name, phone)').eq('status', 'active'),
       supabase.from('bbq_reservations').select('*, member:members(name)').eq('status', 'confirmed').gte('reservation_date', today).order('reservation_date').limit(20),
       supabase.from('service_orders').select('*, member:members(name), product:store_products(name)').in('status', ['pending', 'processing']).order('created_at', { ascending: false }).limit(20),

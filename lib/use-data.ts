@@ -51,8 +51,8 @@ export function useDashboardStats() {
         bbqRes, ordersRes, couponsRes,
         expiringRes, revenueRes,
       ] = await Promise.all([
-        supabase.from('farms').select('id', { count: 'exact', head: true }),
-        supabase.from('farms').select('id', { count: 'exact', head: true }).eq('status', 'rented'),
+        supabase.from('farms_active').select('id', { count: 'exact', head: true }),
+        supabase.from('farms_active').select('id', { count: 'exact', head: true }).eq('status', 'rented'),
         supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
         supabase.from('bbq_reservations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').gte('reservation_date', today.toISOString().split('T')[0]),
         supabase.from('service_orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'processing']),
@@ -250,9 +250,9 @@ export function useFarms() {
     const supabase = createClient()
 
     const [farmsRes, rentalsRes, zonesRes, ordersRes] = await Promise.all([
-      supabase.from('farms').select('*').order('number'),
+      supabase.from('farms_active').select('*').order('number'),
       supabase.from('farm_rentals').select('*, customer:customers(name, phone)').eq('status', 'active'),
-      supabase.from('farm_zones').select('*').order('sort_order'),
+      supabase.from('farm_zones_active').select('*').order('sort_order'),
       supabase.from('service_orders').select('*, product:store_products(name), member:members(name)').in('status', ['pending', 'processing']).order('created_at', { ascending: false }),
     ])
 

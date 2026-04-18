@@ -13,6 +13,7 @@ import { useFarms } from '@/lib/use-data';
 import { createClient } from '@/lib/supabase/client';
 import ExportButton from '@/components/ui/ExportButton';
 import toast from 'react-hot-toast';
+import { auditLog } from '@/lib/audit-log';
 import type { Farm, FarmZone } from '@/types';
 
 export default function FarmsPage() {
@@ -36,21 +37,32 @@ export default function FarmsPage() {
 
   const handleDeleteFarm = async (farm: Farm) => {
     if (farm.status === 'rented') {
-      toast.error('임대중인 사이트는 삭제할 수 없습니다.');
+      toast.error('임대중인 사이트는 삭제할 수 없습니다. 먼저 계약을 만료/취소하세요.');
       return;
     }
-    if (!confirm(`"${farm.name}" 사이트를 삭제하시겠습니까?`)) return;
-    const { error } = await supabase.from('farms').delete().eq('id', farm.id);
+    const ok = confirm(
+      `"${farm.name}" 사이트를 삭제합니다.\n\n` +
+      `임대 이력은 보존되며, 사이트 목록에서 숨겨집니다.\n` +
+      `과거 임대계약/회원권 기록은 그대로 유지됩니다.\n\n` +
+      `계속하시겠습니까?`
+    );
+    if (!ok) return;
+    // R1: soft-delete
+    const { error } = await supabase.from('farms')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', farm.id);
     if (error) {
-      if (error.message?.includes('farm_rentals')) {
-        toast.error('임대 이력이 있는 사이트는 삭제할 수 없습니다.');
-      } else {
-        toast.error('삭제 실패: ' + error.message);
-      }
-    } else {
-      toast.success('사이트가 삭제되었습니다.');
-      fetchFarms();
+      toast.error('삭제 실패: ' + error.message);
+      return;
     }
+    await auditLog({
+      action: 'soft_delete_farm',
+      resource_type: 'farm',
+      resource_id: farm.id,
+      metadata: { farm_number: farm.number, farm_name: farm.name },
+    });
+    toast.success('사이트가 삭제되었습니다 (이력 보존).');
+    fetchFarms();
   };
 
   const toggleZone = (zoneId: string) => {
@@ -91,9 +103,23 @@ export default function FarmsPage() {
       toast.error(`"${zone.name}"에 ${zoneFarms.length}개 사이트가 있어 삭제할 수 없습니다.`);
       return;
     }
-    if (!confirm(`"${zone.name}" 존을 삭제하시겠습니까?`)) return;
-    const { error } = await supabase.from('farm_zones').delete().eq('id', zone.id);
-    if (error) toast.error('삭제 실패'); else { toast.success('존이 삭제되었습니다.'); fetchFarms(); }
+    if (!confirm(`"${zone.name}" 존을 삭제하시겠습니까?\n(이력은 보존되며 목록에서 숨겨집니다)`)) return;
+    // R1: soft-delete
+    const { error } = await supabase.from('farm_zones')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', zone.id);
+    if (error) {
+      toast.error('삭제 실패');
+      return;
+    }
+    await auditLog({
+      action: 'soft_delete_farm_zone',
+      resource_type: 'farm_zone',
+      resource_id: zone.id,
+      metadata: { zone_name: zone.name },
+    });
+    toast.success('존이 삭제되었습니다 (이력 보존).');
+    fetchFarms();
   };
 
   const openEditZone = (zone: FarmZone) => {

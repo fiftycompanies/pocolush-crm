@@ -44,7 +44,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
   useEffect(() => {
     const fetchData = async () => {
       const [farmsRes, custRes, plansRes] = await Promise.all([
-        supabase.from('farms').select('*').in('status', ['available', 'maintenance']).order('number'),
+        supabase.from('farms_active').select('*').in('status', ['available', 'maintenance']).order('number'),
         supabase.from('customers').select('*').order('name'),
         supabase.from('plans').select('*').eq('is_active', true).order('sort_order'),
       ]);
