@@ -85,7 +85,7 @@ export function useMyReservations(status?: string) {
 }
 
 export function useMyOrders() {
-  const [orders, setOrders] = useState<(ServiceOrder & { product?: { name: string } })[]>([]);
+  const [orders, setOrders] = useState<(ServiceOrder & { product?: { name: string }; photo_count?: number })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
@@ -93,10 +93,15 @@ export function useMyOrders() {
     if (!member) { setLoading(false); return; }
     const { data } = await supabase
       .from('service_orders')
-      .select('*, product:store_products(name)')
+      .select('*, product:store_products(name), photos:service_order_photos(id)')
       .eq('member_id', member.id)
       .order('created_at', { ascending: false });
-    setOrders(data || []);
+    // photo_count 집계 (리스트에서는 실제 URL 불필요)
+    const mapped = (data || []).map((o: ServiceOrder & { product?: { name: string }; photos?: { id: string }[] }) => ({
+      ...o,
+      photo_count: o.photos?.length ?? 0,
+    }));
+    setOrders(mapped);
     setLoading(false);
   }, []);
 
