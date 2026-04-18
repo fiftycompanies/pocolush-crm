@@ -233,7 +233,23 @@ export interface StoreProduct {
   updated_at: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
+export type OrderStatus = 'payment_pending' | 'processing' | 'completed' | 'cancelled';
+
+export interface ServiceOrderPhoto {
+  id: string;
+  service_order_id: string;
+  storage_path: string;
+  display_url: string;
+  caption: string | null;
+  display_order: number;
+  file_size_bytes: number | null;
+  mime_type: string | null;
+  width: number | null;
+  height: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface ServiceOrder {
   id: string;
@@ -251,6 +267,7 @@ export interface ServiceOrder {
   updated_at: string;
   member?: Member & { phone?: string };
   product?: StoreProduct;
+  photos?: ServiceOrderPhoto[];
 }
 
 export interface Coupon {

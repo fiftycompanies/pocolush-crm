@@ -37,7 +37,7 @@ export default function MemberOverviewTab({ data }: Props) {
   };
 
   const activeRentals = rentals.filter(r => r.status === 'active').length;
-  const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+  const pendingOrders = orders.filter(o => o.status === 'payment_pending' || o.status === 'processing').length;
   const completedOrders = orders.filter(o => o.status === 'completed').length;
   const issuedCoupons = coupons.filter(c => c.status === 'issued').length;
   const usedCoupons = coupons.filter(c => c.status === 'used').length;

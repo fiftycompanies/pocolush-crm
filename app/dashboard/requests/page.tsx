@@ -8,6 +8,7 @@ import { useRequests, type RequestType, type UnifiedStatus } from '@/lib/use-req
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { auditLog } from '@/lib/audit-log';
+import ServiceOrderDrawer from '@/components/admin-store/ServiceOrderDrawer';
 
 const TYPE_TABS = [
   { key: '', label: '전체' },
@@ -52,6 +53,8 @@ export default function RequestsPage() {
   const [search, setSearch] = useState('');
   const [bankInfoOpen, setBankInfoOpen] = useState<string | null>(null);
   const [bankInfo, setBankInfo] = useState<{ bank_name?: string; bank_account?: string; bank_holder?: string; bank_note?: string }>({});
+  // 스토어 주문 상세 드로어 (processing/completed 행 클릭 시 오픈)
+  const [drawerOrderId, setDrawerOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('settings').select('key, value').in('key', ['bank_name', 'bank_account', 'bank_holder', 'bank_note']).then(({ data }) => {
@@ -207,9 +210,15 @@ export default function RequestsPage() {
                 const tm = TYPE_META[r.type];
                 const sm = STATUS_META[r.unifiedStatus];
                 const Icon = tm.icon;
+                // 결정 #4: processing/completed 스토어 주문은 행 클릭으로 드로어 오픈
+                const isOrderDetailClickable = r.type === 'order' && (r.rawStatus === 'processing' || r.rawStatus === 'completed');
                 return (
-                  <tr key={r.id + r.type} className="border-b border-border last:border-0 hover:bg-accent/30"
-                    style={{ borderLeft: `3px solid ${tm.color}` }}>
+                  <tr
+                    key={r.id + r.type}
+                    className={`border-b border-border last:border-0 hover:bg-accent/30 ${isOrderDetailClickable ? 'cursor-pointer' : ''}`}
+                    style={{ borderLeft: `3px solid ${tm.color}` }}
+                    onClick={isOrderDetailClickable ? () => setDrawerOrderId(r.id) : undefined}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <Icon className="size-3.5" style={{ color: tm.color }} />
@@ -227,7 +236,7 @@ export default function RequestsPage() {
                     <td className="px-4 py-3">
                       {/* BBQ 액션 */}
                       {r.type === 'bbq' && r.rawStatus === 'confirmed' && (
-                        <select defaultValue="" onChange={e => { if (e.target.value) handleBBQStatus(r.id, e.target.value); e.target.value = ''; }}
+                        <select defaultValue="" onClick={e => e.stopPropagation()} onChange={e => { if (e.target.value) handleBBQStatus(r.id, e.target.value); e.target.value = ''; }}
                           className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary">
                           <option value="" disabled>변경</option>
                           <option value="completed">완료</option>
@@ -235,14 +244,14 @@ export default function RequestsPage() {
                           <option value="cancelled">취소</option>
                         </select>
                       )}
-                      {/* 스토어 액션 */}
-                      {r.type === 'order' && (r.rawStatus === 'payment_pending' || r.rawStatus === 'pending' || r.rawStatus === 'processing') && (
-                        <div className="flex gap-1 flex-wrap">
+                      {/* 스토어 액션 — 결정 #4: 상태별 분기 */}
+                      {/* payment_pending / pending: 인라인 (드롭다운 + 계좌 + 결제처리) */}
+                      {r.type === 'order' && (r.rawStatus === 'payment_pending' || r.rawStatus === 'pending') && (
+                        <div className="flex gap-1 flex-wrap" onClick={e => e.stopPropagation()}>
                           <select defaultValue="" onChange={e => { if (e.target.value) handleOrderStatus(r.id, e.target.value); e.target.value = ''; }}
                             className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary">
                             <option value="" disabled>상태</option>
-                            {(r.rawStatus === 'payment_pending' || r.rawStatus === 'pending') && <option value="processing">입금 확인 → 대기</option>}
-                            <option value="completed">완료</option>
+                            <option value="processing">입금 확인 → 대기</option>
                             <option value="cancelled">취소</option>
                           </select>
                           {r.rawStatus === 'payment_pending' && (
@@ -255,9 +264,18 @@ export default function RequestsPage() {
                           )}
                         </div>
                       )}
+                      {/* processing / completed: 드로어 트리거 */}
+                      {r.type === 'order' && (r.rawStatus === 'processing' || r.rawStatus === 'completed') && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setDrawerOrderId(r.id); }}
+                          className="text-[11px] px-2 py-1 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20"
+                        >
+                          {r.rawStatus === 'processing' ? '사진 · 완료처리' : '결과물 보기'}
+                        </button>
+                      )}
                       {/* 쿠폰 액션 */}
                       {r.type === 'coupon' && r.rawStatus === 'issued' && (
-                        <button onClick={() => handleCouponUse(r.id)}
+                        <button onClick={e => { e.stopPropagation(); handleCouponUse(r.id); }}
                           className="text-[10px] px-2 py-1 rounded-md bg-violet-100 text-violet-700 font-medium">사용처리</button>
                       )}
                     </td>
@@ -325,6 +343,15 @@ export default function RequestsPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* 스토어 주문 상세 드로어 (processing / completed) */}
+      {drawerOrderId && (
+        <ServiceOrderDrawer
+          orderId={drawerOrderId}
+          onClose={() => setDrawerOrderId(null)}
+          onRefetch={refetch}
+        />
       )}
     </div>
   );
