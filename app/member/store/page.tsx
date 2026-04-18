@@ -48,6 +48,7 @@ export default function MemberStorePage() {
     setSubmitting(product.id);
     const { error } = await supabase.from('service_orders').insert({
       member_id: member.id, product_id: product.id, total_price: product.price,
+      status: 'payment_pending',
     });
     if (error) toast.error('신청에 실패했습니다.');
     else {
