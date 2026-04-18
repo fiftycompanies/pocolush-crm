@@ -101,6 +101,7 @@ export default function ReservationPage() {
       p_date: selectedDate,
       p_slot: selectedSlot,
       p_bbq_number: selectedBBQ,
+      p_product_id: activeProduct?.id ?? null,
     });
 
     if (error) {

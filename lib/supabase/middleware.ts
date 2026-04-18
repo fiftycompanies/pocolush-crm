@@ -43,6 +43,9 @@ export async function updateSession(request: NextRequest) {
   const isMemberResetPage = pathname.startsWith('/m/reset-password');
   const isMemberPendingPage = pathname.startsWith('/m/signup/pending');
   const isMemberArea = pathname.startsWith('/member');
+  // R6 Hotfix: /member/notice/[id] 는 카카오 크롤러 공유 미리보기용 공개 경로
+  // published 공지는 RLS(notices_published_read)로 필터되므로 비로그인 접근 허용
+  const isPublicNoticeDetail = /^\/member\/notice\/[^/]+$/.test(pathname);
 
   // /m/reset-password — 토큰 기반, 인증 상태 무관
   if (isMemberResetPage) {
@@ -106,6 +109,11 @@ export async function updateSession(request: NextRequest) {
       redirectUrl.pathname = '/member';
       return NextResponse.redirect(redirectUrl);
     }
+    return supabaseResponse;
+  }
+
+  // /member/notice/[id] — 공개 (카카오 크롤러 OG 미리보기용, RLS로 published만 허용)
+  if (isPublicNoticeDetail) {
     return supabaseResponse;
   }
 
