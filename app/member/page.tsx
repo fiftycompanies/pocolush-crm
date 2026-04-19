@@ -67,11 +67,12 @@ export default function MemberHomePage() {
         if (res) setNextReservation(res);
       }
 
-      // 최근 공지
+      // 최근 공지 (고정 우선: pin_order ASC NULLS LAST → published_at DESC)
       const { data: n } = await supabase
         .from('notices')
         .select('*')
         .eq('is_published', true)
+        .order('pin_order', { ascending: true, nullsFirst: false })
         .order('published_at', { ascending: false })
         .limit(2);
       if (n) setNotices(n);

@@ -309,6 +309,7 @@ export interface Notice {
   is_published: boolean;
   is_push_sent: boolean;
   published_at: string | null;
+  pin_order: number | null;
   created_at: string;
   updated_at: string;
 }

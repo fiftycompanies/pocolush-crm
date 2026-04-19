@@ -138,8 +138,10 @@ export function useNotices(category?: string) {
 
   useEffect(() => {
     async function load() {
+      // 고정 우선 정렬: pin_order ASC NULLS LAST → published_at DESC
       let query = supabase.from('notices').select('*')
         .eq('is_published', true)
+        .order('pin_order', { ascending: true, nullsFirst: false })
         .order('published_at', { ascending: false });
       if (category) query = query.eq('category', category);
       const { data } = await query;
@@ -149,7 +151,11 @@ export function useNotices(category?: string) {
     load();
   }, [category]);
 
-  return { notices, loading };
+  // 고정/일반 분리 (UI에서 편하게)
+  const pinnedNotices = notices.filter(n => n.pin_order !== null);
+  const normalNotices = notices.filter(n => n.pin_order === null);
+
+  return { notices, pinnedNotices, normalNotices, loading };
 }
 
 export function useMyNotifications() {

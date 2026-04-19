@@ -98,12 +98,22 @@ export function useAdminNotices() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+    // 고정 우선: pin_order ASC NULLS LAST → created_at DESC (어드민은 초안 포함해 created_at 기반)
+    const { data } = await supabase
+      .from('notices')
+      .select('*')
+      .order('pin_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
     setNotices(data || []);
     setLoading(false);
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  return { notices, loading, refetch: fetch };
+  // 고정/일반 분리 + 고정 개수 (10건 초과 시 UI warning용)
+  const pinnedNotices = notices.filter(n => n.pin_order !== null);
+  const normalNotices = notices.filter(n => n.pin_order === null);
+  const pinnedCount = pinnedNotices.length;
+
+  return { notices, pinnedNotices, normalNotices, pinnedCount, loading, refetch: fetch };
 }

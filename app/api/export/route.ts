@@ -353,12 +353,14 @@ const CONFIGS: Record<string, ExportConfig> = {
       { header: '제목', key: 'title', width: 40 },
       { header: '카테고리', key: 'category_label', width: 14 },
       { header: '상태', key: 'status_label', width: 10 },
+      { header: '고정순서', key: 'pin_order_label', width: 10 },
       { header: '작성일', key: 'created_at', width: 14 },
     ],
     query: async (supabase, params) => {
       let q = supabase
         .from('notices')
         .select('*')
+        .order('pin_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
       q = applyDateFilter(q, params, 'created_at');
       const { data } = await q;
@@ -368,6 +370,7 @@ const CONFIGS: Record<string, ExportConfig> = {
       title: row.title ?? '',
       category_label: NOTICE_CATEGORY_LABEL[row.category] ?? row.category,
       status_label: row.is_published ? '발행' : '비공개',
+      pin_order_label: row.pin_order !== null && row.pin_order !== undefined ? `고정 #${row.pin_order + 1}` : '',
       created_at: DATE_ONLY(row.created_at),
     }),
   },
