@@ -1,11 +1,12 @@
--- 038_notice_pin_hotfix.sql — 037 블로커 3건 핫픽스 (v2: BEFORE 트리거 단일화)
--- 1) toggle RPC: `:=` 스칼라 할당 후 IF NOT FOUND 무동작 → SELECT INTO 패턴 복귀
--- 2) unpublish 트리거: 자기 해제 + 나머지 shift를 BEFORE 트리거 하나로 통합 (AFTER UPDATE OF 구문 회피)
--- 3) reorder RPC: 전체 핀 음수 전환 후 재할당으로 UNIQUE 충돌 차단
--- 4) DELETE 시 pin_order shift 트리거 추가
+-- 038_notice_pin_hotfix.sql — 037 블로커 3건 핫픽스 (v3: SELECT INTO 완전 제거)
+-- Supabase SQL Editor가 "SELECT ... INTO var" 패턴을 PL/pgSQL 변수 할당 대신
+-- SQL SELECT INTO (테이블 생성)으로 해석 → 모든 SELECT INTO를 아래 패턴으로 교체:
+--   · 존재 확인: PERFORM ... FROM ... WHERE ...; IF NOT FOUND THEN RAISE
+--   · 값 조회: var := (SELECT ... FROM ... WHERE ...)
+-- 이 조합은 036 패턴과 일치하여 Supabase에서 안정적으로 동작.
 
 -- ═══════════════════════════════════════
--- 1) toggle_notice_pin 재작성 (SELECT INTO 복귀)
+-- 1) toggle_notice_pin 재작성 (SELECT INTO 없음)
 -- ═══════════════════════════════════════
 DROP FUNCTION IF EXISTS public.toggle_notice_pin(UUID);
 
@@ -18,31 +19,31 @@ AS $fn_038_toggle$
 DECLARE
   v_current INT;
   v_max INT;
-  v_found_marker INT;
 BEGIN
+  -- admin 체크
   IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin') THEN
     RAISE EXCEPTION 'not_admin';
   END IF;
 
+  -- 전역 advisory lock
   PERFORM pg_advisory_xact_lock(hashtext('notices_pin_order'));
 
-  SELECT pin_order, 1 INTO v_current, v_found_marker
-  FROM public.notices
-  WHERE id = p_notice_id
-  FOR UPDATE;
-
-  IF v_found_marker IS NULL THEN
+  -- 공지 존재 + row lock (PERFORM은 FOUND 세팅)
+  PERFORM 1 FROM public.notices WHERE id = p_notice_id FOR UPDATE;
+  IF NOT FOUND THEN
     RAISE EXCEPTION 'notice_not_found';
   END IF;
 
-  IF v_current IS NULL THEN
-    SELECT COALESCE(MAX(pin_order), -1) + 1 INTO v_max
-    FROM public.notices
-    WHERE pin_order IS NOT NULL;
+  -- 현재 pin_order 조회 (스칼라 할당)
+  v_current := (SELECT pin_order FROM public.notices WHERE id = p_notice_id);
 
+  IF v_current IS NULL THEN
+    -- 신규 고정: MAX+1
+    v_max := COALESCE((SELECT MAX(pin_order) FROM public.notices WHERE pin_order IS NOT NULL), -1) + 1;
     UPDATE public.notices SET pin_order = v_max, updated_at = now() WHERE id = p_notice_id;
     RETURN v_max;
   ELSE
+    -- 해제 + 뒤 핀 shift
     UPDATE public.notices SET pin_order = NULL, updated_at = now() WHERE id = p_notice_id;
     UPDATE public.notices SET pin_order = pin_order - 1, updated_at = now() WHERE pin_order > v_current;
     RETURN NULL;
@@ -54,8 +55,7 @@ REVOKE EXECUTE ON FUNCTION public.toggle_notice_pin(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.toggle_notice_pin(UUID) TO authenticated;
 
 -- ═══════════════════════════════════════
--- 2) 자동 해제 트리거 (BEFORE UPDATE OF is_published 단일 트리거)
---    자기 자신 NEW.pin_order := NULL + 나머지 shift 둘 다 처리
+-- 2) 자동 해제 트리거 (BEFORE UPDATE OF is_published, 단일 트리거)
 -- ═══════════════════════════════════════
 DROP TRIGGER IF EXISTS notices_unpin_on_unpublish ON public.notices;
 DROP TRIGGER IF EXISTS notices_unpin_on_unpublish_before ON public.notices;
@@ -88,7 +88,7 @@ CREATE TRIGGER notices_unpin_on_unpublish
   FOR EACH ROW EXECUTE FUNCTION public.fn_notices_unpin_on_unpublish();
 
 -- ═══════════════════════════════════════
--- 3) reorder 재작성: 전체 음수 전환 → 재할당 → 미사용 NULL
+-- 3) reorder 재작성 (SELECT INTO 없음)
 -- ═══════════════════════════════════════
 DROP FUNCTION IF EXISTS public.reorder_notice_pins(UUID[]);
 
@@ -102,35 +102,42 @@ DECLARE
   v_len INT;
   v_distinct_len INT;
 BEGIN
+  -- admin 체크
   IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin') THEN
     RAISE EXCEPTION 'not_admin';
   END IF;
 
+  -- 입력 길이 (스칼라 할당)
   v_len := COALESCE(array_length(p_ordered_ids, 1), 0);
   IF v_len = 0 OR v_len > 100 THEN
     RAISE EXCEPTION 'invalid_array_length %', v_len;
   END IF;
 
+  -- 중복/NULL 검증 (스칼라 할당)
   v_distinct_len := (SELECT count(DISTINCT x) FROM unnest(p_ordered_ids) x WHERE x IS NOT NULL);
   IF v_distinct_len <> v_len THEN
     RAISE EXCEPTION 'duplicate_or_null_ids';
   END IF;
 
+  -- 동시성 락
   PERFORM pg_advisory_xact_lock(hashtext('notices_pin_order'));
 
+  -- 1단계: 전체 기존 핀을 임시 음수로 전환 (UNIQUE 충돌 회피)
   UPDATE public.notices
      SET pin_order = -pin_order - 1000
-  WHERE pin_order IS NOT NULL;
+   WHERE pin_order IS NOT NULL;
 
+  -- 2단계: 입력 배열 순서대로 0부터 재할당
   UPDATE public.notices
      SET pin_order = arr.idx - 1, updated_at = now()
-  FROM unnest(p_ordered_ids) WITH ORDINALITY arr(id, idx)
-  WHERE public.notices.id = arr.id
-    AND public.notices.pin_order IS NOT NULL;
+    FROM unnest(p_ordered_ids) WITH ORDINALITY arr(id, idx)
+   WHERE public.notices.id = arr.id
+     AND public.notices.pin_order IS NOT NULL;
 
+  -- 3단계: 음수로 남은 것(배열에 없던 기존 핀) → NULL 해제
   UPDATE public.notices
      SET pin_order = NULL, updated_at = now()
-  WHERE pin_order < 0;
+   WHERE pin_order < 0;
 END;
 $fn_038_reorder$;
 
