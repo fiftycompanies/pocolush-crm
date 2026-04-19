@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Edit3, Trash2, Eye, EyeOff, Pin, PinOff, GripVertical, AlertTriangle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, Pin, GripVertical, AlertTriangle } from 'lucide-react';
 import { useAdminNotices } from '@/lib/use-admin-member-data';
 import { NOTICE_CATEGORIES } from '@/lib/member-constants';
 import { createClient } from '@/lib/supabase/client';
@@ -22,6 +22,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 const PUSH_RATE_LIMIT_MIN = 5;
+const PIN_WARNING_THRESHOLD = 10;
+const PUSH_MESSAGE_MAX_LEN = 120;
 
 export default function AdminNoticesPage() {
   const { pinnedNotices, normalNotices, pinnedCount, loading, refetch } = useAdminNotices();
@@ -35,18 +37,18 @@ export default function AdminNoticesPage() {
   // 옵티미스틱 UI용 — 드래그 중엔 localPinned 우선 사용
   const displayPinned = localPinned ?? pinnedNotices;
 
-  const togglePublish = async (id: string, published: boolean) => {
+  const togglePublish = async (id: string, published: boolean, wasPinned: boolean) => {
     const update: Record<string, unknown> = { is_published: !published };
     if (!published) update.published_at = new Date().toISOString();
     else update.published_at = null;
     const { error } = await supabase.from('notices').update(update).eq('id', id);
     if (error) { toast.error('변경에 실패했습니다.'); return; }
-    // 미발행 전환 시 트리거가 자동 해제함
-    if (published) {
+    // audit: 실제 핀 상태였던 경우만 기록 (false positive 방지)
+    if (published && wasPinned) {
       await auditLog({ action: 'auto_unpin_on_unpublish', resource_type: 'notice', resource_id: id });
     }
-    toast.success(published ? '발행 취소됨 (고정도 해제됨)' : '발행됨');
-    refetch();
+    toast.success(published ? (wasPinned ? '발행 취소됨 (고정도 해제됨)' : '발행 취소됨') : '발행됨');
+    await refetch();
   };
 
   const handleDelete = async (id: string) => {
@@ -104,15 +106,20 @@ export default function AdminNoticesPage() {
           if (members && members.length > 0) {
             const { data: notice } = await supabase.from('notices').select('title, content').eq('id', noticeId).maybeSingle();
             if (notice) {
-              await Promise.all(members.map(m => sendNotification({
+              // 부분 실패 허용 — 한 명 실패 시 전체 reject 방지
+              const results = await Promise.allSettled(members.map(m => sendNotification({
                 memberId: m.id,
                 type: 'notice',
                 title: `📢 ${notice.title}`,
-                message: String(notice.content).slice(0, 120),
+                message: String(notice.content).slice(0, PUSH_MESSAGE_MAX_LEN),
                 referenceId: noticeId,
                 referenceType: 'notice',
               })));
+              const failed = results.filter(r => r.status === 'rejected').length;
               pushResent = true;
+              if (failed > 0) {
+                toast.error(`알림 ${failed}건 전송 실패 (나머지는 발송됨)`);
+              }
             }
           }
         }
@@ -126,7 +133,7 @@ export default function AdminNoticesPage() {
       });
 
       toast.success(isNowPinned ? (pushResent ? '고정됨 · 푸시 발송됨' : '고정됨') : '고정 해제됨');
-      refetch();
+      await refetch();
     } finally {
       setPinning(null);
       setPushConfirm(null);
@@ -165,7 +172,7 @@ export default function AdminNoticesPage() {
         resource_type: 'notice',
         metadata: { new_order: next.map(n => n.id) },
       });
-      refetch();
+      await refetch();
       setLocalPinned(null);
     }
   };
@@ -181,15 +188,15 @@ export default function AdminNoticesPage() {
             전체 {total}건
             {pinnedCount > 0 && (
               <span className={`ml-2 inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
-                pinnedCount > 10 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
+                pinnedCount > PIN_WARNING_THRESHOLD ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
               }`}>
                 <Pin className="size-3" fill="currentColor" />
                 고정 {pinnedCount}건
-                {pinnedCount > 10 && <AlertTriangle className="size-3 ml-0.5" />}
+                {pinnedCount > PIN_WARNING_THRESHOLD && <AlertTriangle className="size-3 ml-0.5" />}
               </span>
             )}
           </p>
-          {pinnedCount > 10 && (
+          {pinnedCount > PIN_WARNING_THRESHOLD && (
             <p className="text-[11px] text-red-600 mt-1">⚠ 고정 공지가 10개를 초과했습니다. 멤버 목록에서 일반 공지가 묻힐 수 있어요.</p>
           )}
         </div>
@@ -232,7 +239,7 @@ export default function AdminNoticesPage() {
                           pinning={pinning === n.id}
                           deleting={deleting === n.id}
                           onUnpin={() => handleUnpin(n.id)}
-                          onTogglePublish={() => togglePublish(n.id, n.is_published)}
+                          onTogglePublish={() => togglePublish(n.id, n.is_published, n.pin_order !== null)}
                           onDelete={() => handleDelete(n.id)}
                         />
                       ))}
@@ -253,6 +260,7 @@ export default function AdminNoticesPage() {
               )}
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-border text-left">
+                  {displayPinned.length > 0 && <th className="w-10 px-2 py-2" aria-hidden="true"></th>}
                   <th className="px-4 py-3 font-medium text-text-secondary">제목</th>
                   <th className="px-4 py-3 font-medium text-text-secondary">카테고리</th>
                   <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
@@ -264,6 +272,7 @@ export default function AdminNoticesPage() {
                     const cat = NOTICE_CATEGORIES[n.category as NoticeCategory];
                     return (
                       <tr key={n.id} className="border-b border-border last:border-0 hover:bg-accent/30">
+                        {displayPinned.length > 0 && <td className="w-10 px-2 py-3" aria-hidden="true"></td>}
                         <td className="px-4 py-3 font-medium text-text-primary">{n.title}</td>
                         <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: cat?.color, backgroundColor: cat?.bg }}>{cat?.label}</span></td>
                         <td className="px-4 py-3"><span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${n.is_published ? 'text-green bg-green-light' : 'text-gray bg-gray-light'}`}>{n.is_published ? '발행' : '미발행'}</span></td>
@@ -274,11 +283,12 @@ export default function AdminNoticesPage() {
                               onClick={() => handlePin(n)}
                               disabled={pinning === n.id}
                               className="p-1.5 hover:bg-amber-50 rounded-md"
-                              title="고정"
+                              title="고정하기"
+                              aria-label="고정하기"
                             >
-                              <PinOff className="size-3.5 text-text-tertiary" />
+                              <Pin className="size-3.5 text-text-tertiary" />
                             </button>
-                            <button onClick={() => togglePublish(n.id, n.is_published)} className="p-1.5 hover:bg-accent rounded-md" title={n.is_published ? '발행 취소' : '발행'}>
+                            <button onClick={() => togglePublish(n.id, n.is_published, false)} className="p-1.5 hover:bg-accent rounded-md" title={n.is_published ? '발행 취소' : '발행'}>
                               {n.is_published ? <EyeOff className="size-3.5 text-text-secondary" /> : <Eye className="size-3.5 text-green" />}
                             </button>
                             <Link href={`/dashboard/notices/${n.id}/edit`} className="p-1.5 hover:bg-accent rounded-md"><Edit3 className="size-3.5 text-text-secondary" /></Link>
@@ -297,40 +307,84 @@ export default function AdminNoticesPage() {
 
       {/* 푸시 재발송 확인 모달 */}
       {pushConfirm && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setPushConfirm(null)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background rounded-xl w-[90vw] max-w-md z-50 shadow-xl">
-            <div className="p-5 space-y-4">
-              <div>
-                <h2 className="text-sm font-semibold text-text-primary">공지 고정</h2>
-                <p className="text-xs text-text-secondary mt-1 truncate">&quot;{pushConfirm.title}&quot;</p>
-              </div>
-              <label className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={pushChecked}
-                  onChange={e => setPushChecked(e.target.checked)}
-                  className="mt-0.5 accent-amber-600"
-                />
-                <div className="flex-1 text-xs">
-                  <p className="font-medium text-amber-900">이 공지를 전체 멤버에게 다시 알림 발송</p>
-                  <p className="text-amber-700/80 mt-0.5">체크하지 않으면 조용히 고정됩니다. {PUSH_RATE_LIMIT_MIN}분 내 중복 발송은 자동 차단됩니다.</p>
-                </div>
-              </label>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setPushConfirm(null)} className="px-3 py-1.5 text-xs text-text-secondary hover:bg-accent rounded-lg">취소</button>
-                <button
-                  onClick={() => executePinToggle(pushConfirm.noticeId, pushChecked)}
-                  className="px-4 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-dark"
-                >
-                  고정하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+        <PushConfirmModal
+          title={pushConfirm.title}
+          checked={pushChecked}
+          onChange={setPushChecked}
+          onCancel={() => setPushConfirm(null)}
+          onConfirm={() => executePinToggle(pushConfirm.noticeId, pushChecked)}
+          rateLimitMin={PUSH_RATE_LIMIT_MIN}
+        />
       )}
     </div>
+  );
+}
+
+// 푸시 확인 모달 — ESC·a11y 포함
+function PushConfirmModal({
+  title, checked, onChange, onCancel, onConfirm, rateLimitMin,
+}: {
+  title: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  rateLimitMin: number;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onCancel]);
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-50" onClick={onCancel} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pin-confirm-title"
+        aria-describedby="pin-confirm-desc"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background rounded-xl w-[90vw] max-w-md z-50 shadow-xl"
+      >
+        <div className="p-5 space-y-4">
+          <div>
+            <h2 id="pin-confirm-title" className="text-sm font-semibold text-text-primary">공지 고정</h2>
+            <p className="text-xs text-text-secondary mt-1 truncate">&quot;{title}&quot;</p>
+          </div>
+          <label className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={e => onChange(e.target.checked)}
+              className="mt-0.5 accent-amber-600"
+              aria-describedby="pin-confirm-desc"
+            />
+            <div id="pin-confirm-desc" className="flex-1 text-xs">
+              <p className="font-medium text-amber-900">이 공지를 전체 멤버에게 다시 알림 발송</p>
+              <p className="text-amber-700/80 mt-0.5">체크하지 않으면 조용히 고정됩니다. {rateLimitMin}분 내 중복 발송은 자동 차단됩니다.</p>
+            </div>
+          </label>
+          <div className="flex gap-2 justify-end">
+            <button onClick={onCancel} className="px-3 py-1.5 text-xs text-text-secondary hover:bg-accent rounded-lg">취소</button>
+            <button
+              onClick={onConfirm}
+              autoFocus
+              className="px-4 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-dark"
+            >
+              고정하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
