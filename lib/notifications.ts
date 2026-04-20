@@ -63,6 +63,10 @@ export async function sendNotification(params: SendNotificationParams) {
       response: result.response ? JSON.parse(JSON.stringify(result.response)) : null,
       error_message: result.success ? null : result.message,
     });
+    // P1-e: 무효 토큰 자동 정리 (registration-token-not-registered 등)
+    if (result.tokenInvalid) {
+      await supabase.from('members').update({ push_token: null }).eq('id', params.memberId);
+    }
     if (result.success) return; // 푸시 성공 시 알림톡 스킵
   }
 
