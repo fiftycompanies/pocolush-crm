@@ -130,15 +130,17 @@ BEGIN
 
   -- 6. sample_match: 앞 10건 path 포맷 검증
   --    형식: <uuid>/<timestamp>-<random>.<ext>
-  SELECT COUNT(*) INTO v_sample_match
-  FROM (
-    SELECT name FROM storage.objects
-    WHERE bucket_id = 'service-photos'
-      AND created_at < NOW() - INTERVAL '7 days'
-      AND name NOT IN (SELECT storage_path FROM public.service_order_photos WHERE storage_path IS NOT NULL)
-    LIMIT 10
-  ) AS sample
-  WHERE name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/\d+-[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$';
+  --    Supabase SQL Editor 파서 호환: SELECT INTO 금지 → 스칼라 서브쿼리 할당
+  v_sample_match := (
+    SELECT COUNT(*) FROM (
+      SELECT name FROM storage.objects
+      WHERE bucket_id = 'service-photos'
+        AND created_at < NOW() - INTERVAL '7 days'
+        AND name NOT IN (SELECT storage_path FROM public.service_order_photos WHERE storage_path IS NOT NULL)
+      LIMIT 10
+    ) AS sample
+    WHERE sample.name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/\d+-[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$'
+  );
 
   -- 7. 실삭제 (execute 모드 + sample_match 게이트 통과 시)
   IF NOT v_dry_run AND v_sample_match >= 5 THEN
@@ -225,10 +227,10 @@ DECLARE
   v_existing_job_id INT;
 BEGIN
   -- 이미 등록된 job 존재 시 재사용 (BL-7: 중복 등록 방어)
-  SELECT jobid INTO v_existing_job_id
-  FROM cron.job
-  WHERE jobname = 'cleanup_service_photos'
-  LIMIT 1;
+  -- Supabase SQL Editor 파서 호환: SELECT INTO 금지 → 스칼라 서브쿼리 할당
+  v_existing_job_id := (
+    SELECT jobid FROM cron.job WHERE jobname = 'cleanup_service_photos' LIMIT 1
+  );
 
   IF v_existing_job_id IS NOT NULL THEN
     PERFORM cron.unschedule(v_existing_job_id);
