@@ -1,26 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, Edit3, Trash2, Eye, EyeOff, Pin, GripVertical, AlertTriangle } from 'lucide-react';
+import { Plus, Pin, AlertTriangle, Eye, EyeOff, Edit3, Trash2 } from 'lucide-react';
 import { useAdminNotices } from '@/lib/use-admin-member-data';
 import { NOTICE_CATEGORIES } from '@/lib/member-constants';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
-import type { NoticeCategory, Notice } from '@/types';
+import type { Notice, NoticeCategory } from '@/types';
 import ExportButton from '@/components/ui/ExportButton';
 import { auditLog } from '@/lib/audit-log';
 import { sendNotification } from '@/lib/notifications';
 import {
-  DndContext, closestCenter, PointerSensor, KeyboardSensor,
-  useSensor, useSensors, type DragEndEvent,
+  DndContext, DragOverlay, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors,
+  type DragEndEvent, type DragStartEvent, type DragOverEvent,
+  type Announcements,
 } from '@dnd-kit/core';
 import {
-  SortableContext, arrayMove, useSortable,
+  SortableContext, arrayMove,
   verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { PUSH_RATE_LIMIT_MIN, PIN_WARNING_THRESHOLD, PUSH_MESSAGE_MAX_LEN } from '@/lib/notice-constants';
+import { SortablePinnedRow } from '@/components/admin-notices/SortablePinnedRow';
+import { DragOverlayClone } from '@/components/admin-notices/DragOverlayClone';
 
 export default function AdminNoticesPage() {
   const { pinnedNotices, normalNotices, pinnedCount, loading, refetch } = useAdminNotices();
@@ -30,6 +33,9 @@ export default function AdminNoticesPage() {
   const [pushConfirm, setPushConfirm] = useState<{ noticeId: string; title: string } | null>(null);
   const [pushChecked, setPushChecked] = useState(false);
   const [localPinned, setLocalPinned] = useState<Notice[] | null>(null);
+  // P1-a: 드래그 위치 인디케이터용 state
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   // 옵티미스틱 UI용 — 드래그 중엔 localPinned 우선 사용
   const displayPinned = localPinned ?? pinnedNotices;
@@ -151,7 +157,24 @@ export default function AdminNoticesPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+    setOverId(null);
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    setOverId(event.over ? String(event.over.id) : null);
+  }, []);
+
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+    setOverId(null);
+  }, []);
+
   const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
+    setOverId(null);
+
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -180,6 +203,49 @@ export default function AdminNoticesPage() {
       await refetch();
       setLocalPinned(null);
     }
+  };
+
+  // dnd-kit 인덱스 (drop 방향 판정용)
+  const activeIndex = useMemo(
+    () => (activeId ? displayPinned.findIndex(n => n.id === activeId) : -1),
+    [activeId, displayPinned],
+  );
+  const overIndex = useMemo(
+    () => (overId ? displayPinned.findIndex(n => n.id === overId) : -1),
+    [overId, displayPinned],
+  );
+  const activeNotice = useMemo(
+    () => displayPinned.find(n => n.id === activeId) ?? null,
+    [activeId, displayPinned],
+  );
+
+  // §4-2 UX 체크리스트: 한국어 announcements (aria-live 공지)
+  const announcements: Announcements = useMemo(() => ({
+    onDragStart({ active }) {
+      const notice = displayPinned.find(n => n.id === active.id);
+      return notice ? `공지 "${notice.title}"를 집었습니다.` : '항목을 집었습니다.';
+    },
+    onDragOver({ active, over }) {
+      if (!over) return '';
+      const notice = displayPinned.find(n => n.id === active.id);
+      const pos = displayPinned.findIndex(n => n.id === over.id) + 1;
+      const total = displayPinned.length;
+      return notice ? `"${notice.title}"를 ${pos} / 총 ${total} 번째 위치로 이동 가능` : '';
+    },
+    onDragEnd({ active, over }) {
+      if (!over) return '이동이 취소되었습니다.';
+      const notice = displayPinned.find(n => n.id === active.id);
+      const pos = displayPinned.findIndex(n => n.id === over.id) + 1;
+      return notice ? `"${notice.title}"를 ${pos} 번째로 이동했습니다.` : '';
+    },
+    onDragCancel({ active }) {
+      const notice = displayPinned.find(n => n.id === active.id);
+      return notice ? `"${notice.title}" 이동을 취소했습니다.` : '취소됨';
+    },
+  }), [displayPinned]);
+
+  const screenReaderInstructions = {
+    draggable: '스페이스 바로 공지를 집고, 방향키로 이동한 뒤, 스페이스 바로 놓으세요. 이스케이프로 취소합니다.',
   };
 
   const total = pinnedNotices.length + normalNotices.length;
@@ -223,18 +289,30 @@ export default function AdminNoticesPage() {
               <div className="px-4 py-2.5 border-b border-border bg-amber-50/60 flex items-center gap-1.5">
                 <Pin className="size-3.5 text-amber-600" fill="currentColor" />
                 <span className="text-[12px] font-semibold text-amber-800">고정 공지 ({displayPinned.length})</span>
-                <span className="text-[11px] text-amber-700/70 ml-auto">GripVertical 핸들로 드래그 · 키보드: Space → ↑↓ → Space</span>
+                <span className="text-[11px] text-amber-700/70 ml-auto">드래그로 순서 변경 · 키보드: Space → ↑↓ → Space · Esc로 취소</span>
               </div>
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-border text-left">
-                  <th className="w-10 px-2 py-2"></th>
-                  <th className="px-4 py-3 font-medium text-text-secondary">제목</th>
-                  <th className="px-4 py-3 font-medium text-text-secondary">카테고리</th>
-                  <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
-                  <th className="px-4 py-3 font-medium text-text-secondary">작성일</th>
-                  <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
-                </tr></thead>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              {/* 키보드 조작 힌트 (스크린리더 + focus 시 visible) */}
+              <span id="drag-keyboard-help" className="sr-only">
+                스페이스 바로 공지를 집고, 방향키로 이동한 뒤, 스페이스 바로 놓으세요. 이스케이프로 취소합니다.
+              </span>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                accessibility={{ announcements, screenReaderInstructions }}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-border text-left">
+                    <th className="w-11 px-1 py-2"></th>
+                    <th className="px-4 py-3 font-medium text-text-secondary">제목</th>
+                    <th className="px-4 py-3 font-medium text-text-secondary">카테고리</th>
+                    <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
+                    <th className="px-4 py-3 font-medium text-text-secondary">작성일</th>
+                    <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
+                  </tr></thead>
                   <SortableContext items={displayPinned.map(n => n.id)} strategy={verticalListSortingStrategy}>
                     <tbody>
                       {displayPinned.map(n => (
@@ -243,6 +321,9 @@ export default function AdminNoticesPage() {
                           notice={n}
                           pinning={pinning === n.id}
                           deleting={deleting === n.id}
+                          overId={overId}
+                          activeIndex={activeIndex}
+                          overIndex={overIndex}
                           onUnpin={() => handleUnpin(n.id)}
                           onTogglePublish={() => togglePublish(n.id, n.is_published, n.pin_order !== null)}
                           onDelete={() => handleDelete(n.id)}
@@ -250,8 +331,12 @@ export default function AdminNoticesPage() {
                       ))}
                     </tbody>
                   </SortableContext>
-                </DndContext>
-              </table>
+                </table>
+                {/* Floating clone (table 외부 렌더 — DOM invalid 회피) */}
+                <DragOverlay dropAnimation={null}>
+                  {activeNotice ? <DragOverlayClone notice={activeNotice} /> : null}
+                </DragOverlay>
+              </DndContext>
             </div>
           )}
 
@@ -393,60 +478,4 @@ function PushConfirmModal({
   );
 }
 
-// 드래그 가능한 고정 공지 행
-function SortablePinnedRow({
-  notice, pinning, deleting, onUnpin, onTogglePublish, onDelete,
-}: {
-  notice: Notice;
-  pinning: boolean;
-  deleting: boolean;
-  onUnpin: () => void;
-  onTogglePublish: () => void;
-  onDelete: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: notice.id });
-  const cat = NOTICE_CATEGORIES[notice.category as NoticeCategory];
-  return (
-    <tr
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`border-b border-border last:border-0 bg-amber-50/40 hover:bg-amber-50 ${isDragging ? 'opacity-40' : ''}`}
-    >
-      <td className="w-10 px-2 py-3 text-center">
-        <button
-          {...attributes}
-          {...listeners}
-          aria-label="순서 변경 핸들"
-          className="cursor-grab active:cursor-grabbing p-1 text-text-tertiary hover:text-text-primary touch-none"
-        >
-          <GripVertical className="size-4" />
-        </button>
-      </td>
-      <td className="px-4 py-3 font-medium text-text-primary">
-        <span className="inline-flex items-center gap-1">
-          <Pin className="size-3 text-amber-500" fill="currentColor" />
-          {notice.title}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: cat?.color, backgroundColor: cat?.bg }}>{cat?.label}</span>
-      </td>
-      <td className="px-4 py-3">
-        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${notice.is_published ? 'text-green bg-green-light' : 'text-gray bg-gray-light'}`}>{notice.is_published ? '발행' : '미발행'}</span>
-      </td>
-      <td className="px-4 py-3 text-text-secondary text-xs">{new Date(notice.created_at).toLocaleDateString('ko-KR')}</td>
-      <td className="px-4 py-3">
-        <div className="flex gap-1">
-          <button onClick={onUnpin} disabled={pinning} className="p-1.5 hover:bg-amber-100 rounded-md" title="고정 해제">
-            <Pin className="size-3.5 text-amber-600" fill="currentColor" />
-          </button>
-          <button onClick={onTogglePublish} className="p-1.5 hover:bg-accent rounded-md" title={notice.is_published ? '발행 취소' : '발행'}>
-            {notice.is_published ? <EyeOff className="size-3.5 text-text-secondary" /> : <Eye className="size-3.5 text-green" />}
-          </button>
-          <Link href={`/dashboard/notices/${notice.id}/edit`} className="p-1.5 hover:bg-accent rounded-md"><Edit3 className="size-3.5 text-text-secondary" /></Link>
-          <button onClick={onDelete} disabled={deleting} className="p-1.5 hover:bg-accent rounded-md"><Trash2 className="size-3.5 text-red" /></button>
-        </div>
-      </td>
-    </tr>
-  );
-}
+// SortablePinnedRow 는 components/admin-notices/SortablePinnedRow.tsx 로 분리됨 (P1-a)

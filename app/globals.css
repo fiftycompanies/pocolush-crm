@@ -191,3 +191,37 @@
 .stagger > *:nth-child(4) { animation-delay: 0.3s; }
 .stagger > *:nth-child(5) { animation-delay: 0.4s; }
 .stagger > *:nth-child(6) { animation-delay: 0.5s; }
+
+/* ── Drop indicator (공지 고정 드래그) ──
+   §4-2 UX 체크리스트: 색 + pulse + dashed border (색맹 대응 3중)
+   - 색(#3B82F6 primary blue) · opacity pulse · dashed border
+*/
+@keyframes dropPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.drop-indicator-above::before,
+.drop-indicator-below::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #3B82F6;
+  border-top: 1px dashed #3B82F6;
+  border-radius: 2px;
+  animation: dropPulse 1.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+.drop-indicator-above::before { top: -1px; }
+.drop-indicator-below::after { bottom: -1px; }
+
+/* prefers-reduced-motion: 애니메이션 제거, static 표시 유지 */
+@media (prefers-reduced-motion: reduce) {
+  .drop-indicator-above::before,
+  .drop-indicator-below::after {
+    animation: none;
+    opacity: 1;
+  }
+}
