@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # npm 패키지 (patch 자동 머지 대상, minor/major 수동 리뷰)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - automated
+    groups:
+      # 타입 정의는 묶어서
+      types:
+        patterns:
+          - "@types/*"
+      # ESLint 관련도 묶어서
+      eslint:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+    # major는 수동 리뷰 — PR 생성만
+    ignore:
+      - dependency-name: "next"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "react"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "react-dom"
+        update-types:
+          - version-update:semver-major
+
+  # GitHub Actions workflow 의존성
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions

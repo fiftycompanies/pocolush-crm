@@ -20,10 +20,7 @@ import {
   verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-const PUSH_RATE_LIMIT_MIN = 5;
-const PIN_WARNING_THRESHOLD = 10;
-const PUSH_MESSAGE_MAX_LEN = 120;
+import { PUSH_RATE_LIMIT_MIN, PIN_WARNING_THRESHOLD, PUSH_MESSAGE_MAX_LEN } from '@/lib/notice-constants';
 
 export default function AdminNoticesPage() {
   const { pinnedNotices, normalNotices, pinnedCount, loading, refetch } = useAdminNotices();
@@ -54,10 +51,18 @@ export default function AdminNoticesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('공지를 삭제하시겠습니까?')) return;
     setDeleting(id);
-    await supabase.from('notices').delete().eq('id', id);
-    toast.success('삭제되었습니다.');
-    refetch();
-    setDeleting(null);
+    try {
+      const { error } = await supabase.from('notices').delete().eq('id', id);
+      if (error) {
+        toast.error('삭제 실패: ' + (error.message || '알 수 없는 오류'));
+        return;
+      }
+      await auditLog({ action: 'delete_notice', resource_type: 'notice', resource_id: id });
+      toast.success('삭제되었습니다.');
+      await refetch();
+    } finally {
+      setDeleting(null);
+    }
   };
 
   // Pin 추가 (미발행 공지는 바로 토글, 발행된 공지는 푸시 체크박스 모달 경유)
