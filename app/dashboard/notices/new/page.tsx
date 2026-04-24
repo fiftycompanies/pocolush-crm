@@ -85,7 +85,7 @@ export default function NewNoticePage() {
     if (!data.title.trim()) { toast.error('제목을 입력해주세요.'); return; }
     if (!data.content.trim()) { toast.error('내용을 입력해주세요.'); return; }
     setSaving(true);
-    const { error } = await supabase
+    const { error, data: updated } = await supabase
       .from('notices')
       .update({
         title: data.title.trim(),
@@ -94,9 +94,12 @@ export default function NewNoticePage() {
         is_published: publish,
         published_at: publish ? new Date().toISOString() : null,
       })
-      .eq('id', draftId);
+      .eq('id', draftId)
+      .select('id');
     if (error) {
       toast.error('저장에 실패했습니다.');
+    } else if (!updated || updated.length === 0) {
+      toast.error('공지 저장에 실패했습니다. 다시 시도해주세요.');
     } else {
       setSavedOrPublished(true);
       toast.success(publish ? '공지가 발행되었습니다.' : '임시저장되었습니다.');

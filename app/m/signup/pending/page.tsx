@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { OFFICE_PHONE, OFFICE_PHONE_TEL } from '@/lib/constants';
 
 export default function SignupPendingPage() {
   const router = useRouter();
@@ -35,7 +36,9 @@ export default function SignupPendingPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-text-primary">문의</p>
-              <p className="text-xs text-text-secondary">카카오채널 @포코러쉬</p>
+              <a href={OFFICE_PHONE_TEL} className="text-xs text-text-secondary hover:text-primary transition-colors">
+                {OFFICE_PHONE}
+              </a>
             </div>
           </div>
         </div>

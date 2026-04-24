@@ -85,8 +85,13 @@ export default function MemberSignupPage() {
     });
 
     if (error) {
-      if (error.message.includes('already registered')) {
+      if (error.message?.includes('already registered')) {
         toast.error('이미 등록된 이메일입니다.');
+      } else if (
+        error.message?.includes('members_phone_unique') ||
+        (error.message?.includes('duplicate') && error.message?.includes('phone'))
+      ) {
+        toast.error('이미 가입된 전화번호입니다.');
       } else {
         toast.error('회원가입에 실패했습니다. 다시 시도해주세요.');
       }

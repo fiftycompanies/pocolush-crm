@@ -47,8 +47,9 @@ export default function EditNoticePage() {
       update.published_at = publish ? new Date().toISOString() : null;
     }
 
-    const { error } = await supabase.from('notices').update(update).eq('id', id);
+    const { error, data: updated } = await supabase.from('notices').update(update).eq('id', id).select('id');
     if (error) toast.error('수정에 실패했습니다.');
+    else if (!updated || updated.length === 0) toast.error('공지 수정에 실패했습니다. 다시 시도해주세요.');
     else { toast.success('공지가 수정되었습니다.'); router.push('/dashboard/notices'); }
     setSaving(false);
   };
