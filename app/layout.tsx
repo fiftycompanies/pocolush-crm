@@ -3,6 +3,8 @@ import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
 export const metadata: Metadata = {
+  // 상대 경로 OG 이미지/URL 을 자동 절대화 (카톡/OG 썸네일 정상화)
+  metadataBase: new URL('https://app.pocolush.com'),
   title: {
     default: 'POCOLUSH 자람터',
     template: '%s | POCOLUSH',

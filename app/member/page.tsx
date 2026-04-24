@@ -6,6 +6,7 @@ import { CalendarCheck, ShoppingBag, Bell, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import MembershipCard from '@/components/member/MembershipCard';
 import { TIME_SLOTS, RESERVATION_STATUS, NOTICE_CATEGORIES } from '@/lib/member-constants';
+import { OFFICE_PHONE, OFFICE_PHONE_TEL } from '@/lib/constants';
 import type { Member, Membership, Farm, BBQReservation, Notice } from '@/types';
 
 export default function MemberHomePage() {
@@ -131,11 +132,12 @@ export default function MemberHomePage() {
                 </div>
               </div>
 
-              <a href="tel:054-971-5274"
-                className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors active:scale-[0.98]">
+              <a href={OFFICE_PHONE_TEL}
+                className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors active:scale-[0.98]"
+                aria-label={`관리사무소 ${OFFICE_PHONE} 로 전화 걸기`}>
                 연장 신청 문의하기
               </a>
-              <p className="text-[10px] text-text-tertiary text-center mt-2">054-971-5274 (관리사무소)</p>
+              <p className="text-[10px] text-text-tertiary text-center mt-2">{OFFICE_PHONE} (관리사무소)</p>
             </div>
           </div>
         )
