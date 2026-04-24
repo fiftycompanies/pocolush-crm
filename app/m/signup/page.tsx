@@ -65,6 +65,20 @@ export default function MemberSignupPage() {
 
     setLoading(true);
 
+    // 전화번호 중복 사전 체크 (GoTrue가 트리거 에러를 일반 메시지로 래핑하므로 사전 조회 필요)
+    const normalizedPhone = phone.replace(/[^0-9]/g, '');
+    const { data: existingMember } = await supabase
+      .from('members')
+      .select('id')
+      .eq('phone', normalizedPhone)
+      .maybeSingle();
+
+    if (existingMember) {
+      toast.error('이미 가입된 전화번호입니다.');
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
