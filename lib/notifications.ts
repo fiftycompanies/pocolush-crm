@@ -1,4 +1,21 @@
-import { createClient } from '@/lib/supabase/client';
+'use server';
+
+/**
+ * Server Action 으로 이관 (Phase 0.5 hotfix)
+ *
+ * 배경: firebase-admin 이 client bundle 로 누수되어 Vercel 빌드 실패
+ *   app/dashboard/notices/page.tsx ('use client')
+ *     → lib/notifications.ts
+ *       → lib/fcm.ts (firebase-admin)
+ *         → node:net (client 번들 불가)
+ *
+ * 해결: 이 파일을 'use server' Server Action 으로 선언 → Next.js 가 client import 경계를
+ *       네트워크 호출로 번들, firebase-admin 은 서버에만 남음.
+ *
+ * 호출부는 기존과 동일: `await sendNotification({...})`
+ */
+
+import { createClient } from '@/lib/supabase/server';
 import { sendAlimtalk } from '@/lib/aligo';
 import { sendPush } from '@/lib/fcm';
 import type { NotificationType } from '@/types';
@@ -13,7 +30,7 @@ interface SendNotificationParams {
 }
 
 export async function sendNotification(params: SendNotificationParams) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1. 항상: member_notifications INSERT (인앱 알림)
   const { data: notification, error: notifError } = await supabase
