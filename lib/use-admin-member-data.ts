@@ -99,16 +99,25 @@ export function useAdminNotices() {
   const fetch = useCallback(async () => {
     setLoading(true);
     // 고정 우선: pin_order ASC NULLS LAST → created_at DESC (어드민은 초안 포함해 created_at 기반)
+    // PR-H3 draft_id 패턴: 빈 title 의 자동생성 draft 는 목록에서 숨김 (C3 해결)
+    //   - 7일 TTL cron (056 fn_notices_prune_drafts) 이 실제 정리 담당
+    //   - title 을 한 글자라도 입력하면 목록에 노출됨 (임시저장 상태도 확인 가능)
     const { data } = await supabase
       .from('notices')
       .select('*')
+      .neq('title', '')
       .order('pin_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });
     setNotices(data || []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  // 마이크로태스크 지연 — react-hooks/set-state-in-effect 회피
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve().then(() => { if (alive) fetch(); });
+    return () => { alive = false; };
+  }, [fetch]);
 
   // 고정/일반 분리 + 고정 개수 (10건 초과 시 UI warning용)
   const pinnedNotices = notices.filter(n => n.pin_order !== null);

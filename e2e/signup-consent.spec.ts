@@ -64,7 +64,7 @@ test.describe('Signup consent (PIPA §22① 2-way split)', () => {
     const guideButton = page.getByRole('button', { name: /자람터 이용 가이드 보기/ });
     await expect(guideButton).toBeVisible();
     const isNestedInLabel = await guideButton.evaluate((el) => {
-      let cur: HTMLElement | null = el;
+      let cur: Element | null = el;
       while (cur) {
         if (cur.tagName === 'LABEL') return true;
         cur = cur.parentElement;

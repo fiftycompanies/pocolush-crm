@@ -9,6 +9,7 @@
  * PR-H3, Phase 0.5 hot-track
  */
 
+import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@/lib/supabase/client';
 import { resizeImage, validateImageFile, type ResizedImage } from '@/lib/image-utils';
 import type { NoticeImage } from '@/types';
@@ -98,8 +99,16 @@ export async function uploadNoticeImage(
     .single();
 
   if (dbErr || !data) {
-    // rollback — Storage orphan 방지
-    await supabase.storage.from(BUCKET).remove([storage_path]);
+    // rollback — Storage orphan 방지 (실패 시 Sentry 캡쳐로 관측)
+    const { error: rmErr } = await supabase.storage.from(BUCKET).remove([storage_path]);
+    if (rmErr) {
+      console.error('[notice-image] rollback failed — orphan object:', storage_path, rmErr.message);
+      Sentry.captureException(new Error(`notice-image rollback failed: ${rmErr.message}`), {
+        tags: { feature: 'notice-image-upload', phase: 'rollback' },
+        extra: { noticeId, storage_path, dbErr: dbErr?.message },
+        level: 'warning',
+      });
+    }
     return { error: 'DB 저장 실패: ' + (dbErr?.message ?? 'unknown') };
   }
 
@@ -159,19 +168,19 @@ export async function updateNoticeImage(
 }
 
 /**
- * 순서 재배열 — 2개 swap (WCAG 2.1.1 키보드 ◀▶ 지원용)
- * 경쟁 조건이 드물고 order 는 단조 증가 유지됨 (UX Best-Effort)
+ * 순서 재배열 — 058 fn_notice_images_reorder_swap RPC 사용 (원자적)
+ * - SECURITY DEFINER + advisory lock + 3-step swap
+ * - admin 권한 + 동일 notice 소속 서버 검증
  */
 export async function reorderNoticeImages(
   a: { id: string; order: number },
   b: { id: string; order: number },
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = createClient();
-  // 간단 swap — 격리 수준 낮음. 동시 편집 drift 는 re-fetch 로 해결
-  const [{ error: e1 }, { error: e2 }] = await Promise.all([
-    supabase.from('notice_images').update({ display_order: b.order }).eq('id', a.id),
-    supabase.from('notice_images').update({ display_order: a.order }).eq('id', b.id),
-  ]);
-  if (e1 || e2) return { error: (e1 || e2)!.message };
+  const { error } = await supabase.rpc('fn_notice_images_reorder_swap', {
+    p_image_a_id: a.id,
+    p_image_b_id: b.id,
+  });
+  if (error) return { error: error.message };
   return { ok: true };
 }

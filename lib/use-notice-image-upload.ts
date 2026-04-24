@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import * as Sentry from '@sentry/nextjs';
 import {
   listNoticeImages,
   uploadNoticeImage,
@@ -104,13 +105,14 @@ export function useNoticeImageUpload(noticeId: string | null, opts?: Options) {
       const result = await uploadNoticeImage(noticeId, file);
       if ('error' in result) {
         toast.error(result.error);
-        // Sentry 훅 (있을 경우) — 조용히 실패 방지
-        if (typeof window !== 'undefined' && 'Sentry' in window) {
-          try {
-            (window as unknown as { Sentry?: { captureException: (e: unknown) => void } })
-              .Sentry?.captureException(new Error(`notice image upload: ${result.error}`));
-          } catch { /* noop */ }
-        }
+        // Sentry 직접 import — 업로드 실패 관측 보장
+        Sentry.captureException(
+          new Error(`notice image upload failed: ${result.error}`),
+          {
+            tags: { feature: 'notice-image-upload' },
+            extra: { noticeId, fileName: file.name, fileSize: file.size, mimeType: file.type },
+          },
+        );
         continue;
       }
       successCount++;

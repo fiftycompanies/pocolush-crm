@@ -69,10 +69,30 @@ export default function NoticeImageDropzone({
 
   const copyMarkdown = useCallback((img: UploadedNoticeImage) => {
     const md = `![${img.caption || ''}](${img.display_url})`;
-    navigator.clipboard?.writeText(md).then(
-      () => toast.success('마크다운 복사됨'),
-      () => toast.error('복사 실패 — 수동 복사해주세요'),
-    );
+    // clipboard API — HTTPS/secure context 에서만 동작. HTTP/iOS<13.4 는 execCommand fallback
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(md).then(
+        () => toast.success('마크다운 복사됨'),
+        () => toast.error('복사 실패 — 수동 복사해주세요'),
+      );
+      return;
+    }
+    // fallback: textarea + execCommand (iOS Safari < 13.4, HTTP preview 환경)
+    const ta = document.createElement('textarea');
+    ta.value = md;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.pointerEvents = 'none';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast.success('마크다운 복사됨');
+    } catch {
+      toast.error('복사 실패 — 수동 복사해주세요');
+    } finally {
+      ta.remove();
+    }
   }, []);
 
   const disabled = !noticeId || state === 'uploading';
@@ -186,9 +206,9 @@ export default function NoticeImageDropzone({
                     type="button"
                     onClick={() => copyMarkdown(img)}
                     aria-label={`${i + 1}번 이미지 마크다운 복사`}
-                    className="size-7 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <Copy className="size-3.5" aria-hidden="true" />
+                    <Copy className="size-4" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -196,9 +216,9 @@ export default function NoticeImageDropzone({
                       if (confirm('이 이미지를 삭제할까요?')) removeImage(img.id);
                     }}
                     aria-label={`${i + 1}번 이미지 삭제`}
-                    className="size-7 inline-flex items-center justify-center rounded bg-red-500 hover:bg-red-600 text-white shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    className="size-10 inline-flex items-center justify-center rounded bg-red-500 hover:bg-red-600 text-white shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                   >
-                    <X className="size-3.5" aria-hidden="true" />
+                    <X className="size-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -209,11 +229,11 @@ export default function NoticeImageDropzone({
                     disabled={i === 0}
                     onClick={() => moveImage(img.id, 'left')}
                     aria-label={`${i + 1}번 이미지 왼쪽으로 이동`}
-                    className="size-7 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <ChevronLeft className="size-3.5" aria-hidden="true" />
+                    <ChevronLeft className="size-4" aria-hidden="true" />
                   </button>
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-black/60 text-white">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-black/60 text-white self-center">
                     {i + 1}
                   </span>
                   <button
@@ -221,9 +241,9 @@ export default function NoticeImageDropzone({
                     disabled={i === images.length - 1}
                     onClick={() => moveImage(img.id, 'right')}
                     aria-label={`${i + 1}번 이미지 오른쪽으로 이동`}
-                    className="size-7 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
-                    <ChevronRight className="size-3.5" aria-hidden="true" />
+                    <ChevronRight className="size-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
