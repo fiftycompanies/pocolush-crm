@@ -163,32 +163,25 @@ CREATE TRIGGER trg_notice_images_cleanup_storage
   FOR EACH ROW
   EXECUTE FUNCTION public.fn_notice_images_cleanup_storage();
 
--- 6. Storage 버킷 RLS
-DROP POLICY IF EXISTS "notice_images_read_all" ON storage.objects;
-DROP POLICY IF EXISTS "notice_images_write_admin" ON storage.objects;
-
-CREATE POLICY "notice_images_read_all"
-  ON storage.objects
-  FOR SELECT
-  USING (bucket_id = 'notice-images');
-
-CREATE POLICY "notice_images_write_admin"
-  ON storage.objects
-  FOR ALL
-  USING (
-    bucket_id = 'notice-images'
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = (SELECT auth.uid()) AND role = 'admin'
-    )
-  )
-  WITH CHECK (
-    bucket_id = 'notice-images'
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = (SELECT auth.uid()) AND role = 'admin'
-    )
-  );
+-- ⚠️ 6. Storage 버킷 RLS — Dashboard UI 에서 수동 설정 (SQL 금지)
+--    Supabase 2024~2025: storage.objects 에 POLICY CREATE/DROP 은 SQL Editor 차단
+--    (ERROR 42501: must be owner of relation objects)
+--
+-- 경로: Storage → notice-images → Policies → "New Policy" → "For full customization"
+--
+-- 정책 1: 업로드/수정/삭제는 admin 만
+--   Policy name: notice_images_write_admin
+--   Allowed operation: INSERT, UPDATE, DELETE (또는 ALL)
+--   Target roles: authenticated
+--   USING expression:
+--     bucket_id = 'notice-images'
+--     AND EXISTS (
+--       SELECT 1 FROM public.profiles
+--       WHERE id = (SELECT auth.uid()) AND role = 'admin'
+--     )
+--   WITH CHECK expression: (USING 과 동일)
+--
+-- 정책 2 (SELECT/read): public=TRUE 면 자동 생성됨 — 수동 추가 불필요
 
 -- 7. BL-5 해결: draft 공지 7일 TTL cron (is_published=false + 7일 초과 → DELETE)
 CREATE OR REPLACE FUNCTION public.fn_notices_prune_drafts()

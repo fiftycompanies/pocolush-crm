@@ -1,5 +1,11 @@
--- 055 rollback — public-guides RLS 제거
--- 주의: 버킷 자체는 Dashboard 에서 수동 보존 (데이터 손실 방지)
-
-DROP POLICY IF EXISTS "public_guides_read_all" ON storage.objects;
-DROP POLICY IF EXISTS "public_guides_write_admin" ON storage.objects;
+-- 055 rollback — 버킷 + 정책 Dashboard 수동 제거
+--
+-- Supabase 2024~2025 정책: storage.objects 에 POLICY DROP 은 SQL 금지
+-- (ERROR 42501: must be owner of relation objects)
+--
+-- 제거 절차 (Dashboard):
+-- 1. Storage → public-guides → Policies 탭 → public_guides_write_admin 정책 Delete
+-- 2. public=TRUE 기본 read 정책은 버킷 public=false 로 바꾸거나 버킷 삭제 시 자동 제거
+-- 3. 필요 시 버킷 자체 Delete (데이터 손실 — 사전 백업 필수)
+--
+-- 본 파일 실행 불필요 (SQL 명령 없음)

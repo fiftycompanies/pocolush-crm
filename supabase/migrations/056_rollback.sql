@@ -23,9 +23,9 @@ DROP FUNCTION IF EXISTS public.fn_notice_images_guard();
 DROP FUNCTION IF EXISTS public.fn_notice_images_cleanup_storage();
 DROP FUNCTION IF EXISTS public.fn_notices_prune_drafts();
 
--- 3. Storage RLS
-DROP POLICY IF EXISTS "notice_images_read_all" ON storage.objects;
-DROP POLICY IF EXISTS "notice_images_write_admin" ON storage.objects;
+-- 3. Storage RLS — Dashboard UI 에서 수동 제거
+-- (SQL Editor 에서 storage.objects POLICY DROP 금지: ERROR 42501)
+-- 경로: Storage → notice-images → Policies → 해당 정책 Delete
 
 -- 4. 테이블 RLS
 DROP POLICY IF EXISTS "notice_images_read" ON public.notice_images;

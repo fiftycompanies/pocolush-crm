@@ -1,69 +1,57 @@
 -- ═══════════════════════════════════════════════════════════════════
--- 055: public-guides 버킷 RLS (Dashboard 수동 생성 전제)
+-- 055: public-guides 버킷 assertion (RLS 는 Dashboard UI 에서 설정)
 -- ═══════════════════════════════════════════════════════════════════
 -- 배경: 자람터 이용가이드 PDF 공개 접근용 Storage 버킷
 -- Phase 0.5 hot-track — thoughts/plans/20260421-2100_phase0.5_hottrack_plan_v1.1.md
 --
+-- ⚠️ Supabase 2024~2025 정책: storage.objects 에 대한 POLICY CREATE/DROP 은
+--    SQL Editor 에서 금지됨 (ERROR 42501: must be owner of relation objects).
+--    대신 Dashboard → Storage → {bucket} → Policies 탭 에서 설정.
+--
 -- 전제: Supabase Dashboard → Storage → new bucket
 --   - 이름: public-guides
---   - Public: TRUE
+--   - Public: TRUE  ← 체크 시 SELECT(read) 정책 자동 생성
 --   - File size limit: 10485760 (10MB)
 --   - Allowed MIME types: application/pdf
 --
--- 실행: Supabase SQL Editor (admin 권한)
--- Supabase SQL Editor 제약 준수: SELECT INTO 금지, 라벨드 달러쿼트
+-- 실행: Supabase SQL Editor — 이 파일은 버킷 존재 assertion 만 수행
 -- ═══════════════════════════════════════════════════════════════════
 
--- 1. 버킷 존재 assertion (Dashboard 수동 생성 확인)
+-- 버킷 존재 확인 (Dashboard 수동 생성 검증)
 DO $fn_055_assert$
 BEGIN
   PERFORM 1 FROM storage.buckets WHERE id = 'public-guides';
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'public-guides bucket not found — create via Dashboard first (Storage → New bucket, public=true)'
+    RAISE EXCEPTION 'public-guides bucket not found — create via Dashboard first (Storage → New bucket, public=true, mime=application/pdf, size=10MB)'
       USING ERRCODE = 'P0001';
   END IF;
 END
 $fn_055_assert$;
 
--- 2. RLS 정책 (기존 제거 후 재생성)
-DROP POLICY IF EXISTS "public_guides_read_all" ON storage.objects;
-DROP POLICY IF EXISTS "public_guides_write_admin" ON storage.objects;
-
--- 공개 읽기 (로그인 여부 무관)
-CREATE POLICY "public_guides_read_all"
-  ON storage.objects
-  FOR SELECT
-  USING (bucket_id = 'public-guides');
-
--- 업로드/수정/삭제는 admin 만 (role='admin')
-CREATE POLICY "public_guides_write_admin"
-  ON storage.objects
-  FOR ALL
-  USING (
-    bucket_id = 'public-guides'
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = (SELECT auth.uid()) AND role = 'admin'
-    )
-  )
-  WITH CHECK (
-    bucket_id = 'public-guides'
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = (SELECT auth.uid()) AND role = 'admin'
-    )
-  );
-
-COMMENT ON POLICY "public_guides_read_all" ON storage.objects IS
-  'public-guides 버킷은 공개 읽기 (자람터 이용가이드 PDF)';
-
 -- ═══════════════════════════════════════════════════════════════════
--- 검증 쿼리 (수동):
---   SELECT * FROM storage.buckets WHERE id = 'public-guides';
---   SELECT polname FROM pg_policy
---     WHERE polrelid = 'storage.objects'::regclass
---       AND polname LIKE 'public_guides%';
+-- Dashboard UI 에서 추가 정책 설정 (admin write)
+-- ═══════════════════════════════════════════════════════════════════
+-- 경로: Storage → public-guides → Policies → "New Policy" → "For full customization"
 --
--- PDF 업로드 (Dashboard UI 권장):
---   Storage → public-guides → Upload → v2026/자람터_이용가이드.pdf
+-- 정책 1: 업로드/수정/삭제는 admin 만
+--   Policy name: public_guides_write_admin
+--   Allowed operation: INSERT, UPDATE, DELETE (또는 ALL)
+--   Target roles: authenticated
+--   USING expression:
+--     bucket_id = 'public-guides'
+--     AND EXISTS (
+--       SELECT 1 FROM public.profiles
+--       WHERE id = (SELECT auth.uid()) AND role = 'admin'
+--     )
+--   WITH CHECK expression: (USING 과 동일)
+--
+-- 정책 2 (SELECT/read): public=TRUE 면 자동 생성됨 — 수동 추가 불필요
+--
+-- 정책 추가 후 검증 (SQL Editor 에서 읽기만):
+--   SELECT polname FROM pg_policy
+--   WHERE polrelid = 'storage.objects'::regclass
+--     AND polname LIKE '%public_guides%';
 -- ═══════════════════════════════════════════════════════════════════
+
+-- PDF 업로드 (Dashboard UI):
+--   Storage → public-guides → Upload → v2026/자람터_이용가이드.pdf
