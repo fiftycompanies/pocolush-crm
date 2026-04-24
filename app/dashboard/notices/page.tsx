@@ -112,21 +112,28 @@ export default function AdminNoticesPage() {
         if (recent && recent.length > 0) {
           toast.error(`${PUSH_RATE_LIMIT_MIN}분 내 이미 알림 발송됨 — 푸시만 skip`);
         } else {
-          // 전체 멤버에게 notice 알림 (기존 sendNotification 패턴 따라 한 명씩 INSERT)
+          // 전체 멤버에게 notice 알림 — Server Action 전환 후 청크 배치로 Vercel timeout 회피
+          //   C-1 hotfix: sendNotification 이 Server Action (fetch 왕복) 이므로 전부 동시 호출 시
+          //   100명 × ~500ms = 50s > Vercel serverless 15s limit 초과. 10명 청크 순차 처리로 해결.
           const { data: members } = await supabase.from('members').select('id').eq('status', 'approved');
           if (members && members.length > 0) {
             const { data: notice } = await supabase.from('notices').select('title, content').eq('id', noticeId).maybeSingle();
             if (notice) {
-              // 부분 실패 허용 — 한 명 실패 시 전체 reject 방지
-              const results = await Promise.allSettled(members.map(m => sendNotification({
-                memberId: m.id,
-                type: 'notice',
-                title: `📢 ${notice.title}`,
-                message: String(notice.content).slice(0, PUSH_MESSAGE_MAX_LEN),
-                referenceId: noticeId,
-                referenceType: 'notice',
-              })));
-              const failed = results.filter(r => r.status === 'rejected').length;
+              const CHUNK_SIZE = 10;
+              let failed = 0;
+              for (let i = 0; i < members.length; i += CHUNK_SIZE) {
+                const chunk = members.slice(i, i + CHUNK_SIZE);
+                // 청크 내부는 병렬, 청크 사이는 순차 (서버리스 동시성 제한 ~10)
+                const results = await Promise.allSettled(chunk.map(m => sendNotification({
+                  memberId: m.id,
+                  type: 'notice',
+                  title: `📢 ${notice.title}`,
+                  message: String(notice.content).slice(0, PUSH_MESSAGE_MAX_LEN),
+                  referenceId: noticeId,
+                  referenceType: 'notice',
+                })));
+                failed += results.filter(r => r.status === 'rejected').length;
+              }
               pushResent = true;
               if (failed > 0) {
                 toast.error(`알림 ${failed}건 전송 실패 (나머지는 발송됨)`);
