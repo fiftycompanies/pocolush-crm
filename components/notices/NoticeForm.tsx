@@ -1,28 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { NOTICE_CATEGORIES } from '@/lib/member-constants';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import NoticeImageDropzone from '@/components/notices/NoticeImageDropzone';
 import type { Notice } from '@/types';
 
 interface NoticeFormProps {
   initialData?: Notice;
+  /** 056 notice_images FK. 신규 페이지는 draft_id 로 선생성 후 전달 */
+  noticeId: string | null;
   onSave: (data: { title: string; content: string; category: string }, publish: boolean) => Promise<void>;
   saving: boolean;
   onBack: () => void;
   title: string;
 }
 
-export default function NoticeForm({ initialData, onSave, saving, onBack, title }: NoticeFormProps) {
+export default function NoticeForm({
+  initialData,
+  noticeId,
+  onSave,
+  saving,
+  onBack,
+  title,
+}: NoticeFormProps) {
   const [formTitle, setFormTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [category, setCategory] = useState<string>(initialData?.category || 'notice');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSave = async (publish: boolean) => {
     await onSave({ title: formTitle, content, category }, publish);
   };
+
+  // 커서 위치에 마크다운 삽입 (드롭존 onUploaded 콜백)
+  const insertAtCursor = useCallback((markdown: string) => {
+    const ta = textareaRef.current;
+    if (!ta) {
+      setContent((prev) => prev + markdown);
+      return;
+    }
+    const start = ta.selectionStart ?? content.length;
+    const end = ta.selectionEnd ?? content.length;
+    const next = content.slice(0, start) + markdown + content.slice(end);
+    setContent(next);
+    // 커서를 삽입 후 위치로 이동 (다음 tick)
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + markdown.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  }, [content]);
 
   return (
     <div className="space-y-5" style={{ maxWidth: '1000px' }}>
@@ -38,11 +68,15 @@ export default function NoticeForm({ initialData, onSave, saving, onBack, title 
           className="border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
           {Object.entries(NOTICE_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
-        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용 (마크다운 지원) *"
+
+        {/* 이미지 드롭존 (PR-H3) — textarea 위에 배치 */}
+        <NoticeImageDropzone noticeId={noticeId} onInsertMarkdown={insertAtCursor} />
+
+        <textarea ref={textareaRef} value={content} onChange={e => setContent(e.target.value)} placeholder="내용 (마크다운 지원) *"
           rows={12}
           className="w-full border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-y font-mono" />
         <p className="text-[11px] text-text-tertiary mt-1.5">
-          💡 빈 줄로 문단 구분, 줄 끝에 공백 2칸이면 줄바꿈. Markdown 지원: **굵게**, ## 제목, - 목록
+          💡 빈 줄로 문단 구분, 줄 끝에 공백 2칸이면 줄바꿈. Markdown 지원: **굵게**, ## 제목, - 목록, ![](url) 이미지
         </p>
       </div>
 

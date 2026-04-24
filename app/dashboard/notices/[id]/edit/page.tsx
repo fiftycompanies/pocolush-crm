@@ -23,7 +23,12 @@ export default function EditNoticePage() {
     setLoading(false);
   }, [supabase, id, router]);
 
-  useEffect(() => { fetchNotice(); }, [fetchNotice]);
+  // 마이크로태스크 지연 — effect 동기 setState 회피 (react-hooks/set-state-in-effect)
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve().then(() => { if (alive) fetchNotice(); });
+    return () => { alive = false; };
+  }, [fetchNotice]);
 
   const handleSave = async (data: { title: string; content: string; category: string }, publish: boolean) => {
     if (!data.title.trim()) { toast.error('제목을 입력해주세요.'); return; }
@@ -54,6 +59,7 @@ export default function EditNoticePage() {
   return (
     <NoticeForm
       initialData={notice}
+      noticeId={notice.id}
       onSave={handleSave}
       saving={saving}
       onBack={() => router.push('/dashboard/notices')}
