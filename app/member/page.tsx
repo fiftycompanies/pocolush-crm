@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CalendarCheck, ShoppingBag, Bell, ChevronRight } from 'lucide-react';
+import { CalendarCheck, ShoppingBag, Bell, ChevronRight, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import MembershipCard from '@/components/member/MembershipCard';
+import GuideModal from '@/components/member/GuideModal';
 import { TIME_SLOTS, RESERVATION_STATUS, NOTICE_CATEGORIES } from '@/lib/member-constants';
 import { OFFICE_PHONE, OFFICE_PHONE_TEL } from '@/lib/constants';
 import type { Member, Membership, Farm, BBQReservation, Notice } from '@/types';
@@ -16,6 +17,7 @@ export default function MemberHomePage() {
   const [nextReservation, setNextReservation] = useState<BBQReservation | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -148,13 +150,13 @@ export default function MemberHomePage() {
         </div>
       )}
 
-      {/* 퀵 메뉴 */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* 퀵 메뉴 (UX 옵션 A: 2×2 그리드, 4번째 = 이용가이드) */}
+      <div className="grid grid-cols-2 gap-3">
         {quickMenus.map((menu) => {
           const Icon = menu.icon;
           return (
             <Link key={menu.href} href={menu.href}
-              className="bg-white border border-border rounded-2xl p-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow active:scale-[0.98]">
+              className="bg-white border border-border rounded-2xl p-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: menu.color + '10' }}>
                 <Icon className="size-5" style={{ color: menu.color }} strokeWidth={1.8} />
               </div>
@@ -162,6 +164,19 @@ export default function MemberHomePage() {
             </Link>
           );
         })}
+        {/* 4번째: 이용가이드 (GuideModal 오픈) */}
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          aria-haspopup="dialog"
+          aria-label="자람터 이용가이드 보기"
+          className="bg-white border border-border rounded-2xl p-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#16A34A10' }}>
+            <BookOpen className="size-5" style={{ color: '#16A34A' }} strokeWidth={1.8} />
+          </div>
+          <span className="text-[12px] font-medium text-text-primary">이용가이드</span>
+        </button>
       </div>
 
       {/* 다음 예약 */}
@@ -223,6 +238,9 @@ export default function MemberHomePage() {
           <p className="text-[13px] text-text-tertiary">공지사항이 없습니다.</p>
         )}
       </div>
+
+      {/* GuideModal (MemberNav z-50 위에 z-60 으로 올라감 — E BL-1 해결) */}
+      <GuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }
