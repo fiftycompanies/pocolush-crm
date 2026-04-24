@@ -2,7 +2,21 @@ import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
+/**
+ * metadataBase 우선순위 (H7):
+ *  1) NEXT_PUBLIC_APP_URL — 명시 설정 시 최우선
+ *  2) VERCEL_URL — Vercel preview/staging (자동 주입, 프로토콜 접두 필요)
+ *  3) 'https://app.pocolush.com' — prod 기본값
+ * preview/staging 배포에서 OG 태그가 prod 도메인으로 오염되는 문제 해결.
+ */
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
+  ?? 'https://app.pocolush.com';
+
 export const metadata: Metadata = {
+  // 상대 경로 OG 이미지/URL 을 자동 절대화 (카톡/OG 썸네일 정상화)
+  metadataBase: new URL(APP_URL),
   title: {
     default: 'POCOLUSH 자람터',
     template: '%s | POCOLUSH',

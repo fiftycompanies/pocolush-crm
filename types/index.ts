@@ -314,6 +314,21 @@ export interface Notice {
   updated_at: string;
 }
 
+/** 056 notice_images — 036 service_order_photos 대칭 + caption */
+export interface NoticeImage {
+  id: string;
+  notice_id: string;
+  storage_path: string;
+  caption: string | null;
+  display_order: number;
+  file_size_bytes: number | null;
+  mime_type: string | null;
+  created_at: string;
+  created_by: string | null;
+  /** 클라이언트에서 resolvePublicUrl() 로 채움 (DB 컬럼 아님) */
+  display_url?: string;
+}
+
 export interface Plan {
   id: string;
   name: string;

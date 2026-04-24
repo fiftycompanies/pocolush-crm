@@ -51,3 +51,12 @@ export const RENTAL_STATUS: Record<string, { label: string; color: string; bg: s
   expired:   { label: '만료',   color: '#DC2626', bg: '#FEF2F2' },
   cancelled: { label: '취소',   color: '#6B7280', bg: '#F3F4F6' },
 };
+
+/**
+ * 자람터 주말농장 관리사무소 연락처 (050 안심번호)
+ * - 자람터 이용가이드 PDF p1/p4/p9 공식 번호
+ * - 기존 하드코딩 `054-971-5274` 는 Phase 0.5 에서 일괄 교체
+ * - tel: 링크 용도 + 화면 표시 공용
+ */
+export const OFFICE_PHONE = '050-7457-5976';
+export const OFFICE_PHONE_TEL = 'tel:05074575976';

@@ -42,7 +42,7 @@ export default function OrderDetailClient({ orderId }: { orderId: string }) {
     const { data: member } = await supabase
       .from('members')
       .select('id')
-      .eq('profile_id', user.id)
+      .eq('user_id', user.id)
       .maybeSingle();
     if (!member || data.member_id !== member.id) {
       setNotFound(true);

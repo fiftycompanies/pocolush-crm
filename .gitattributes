@@ -1,0 +1,7 @@
+* text=auto
+*.sql text eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+pnpm-lock.yaml -diff linguist-generated
