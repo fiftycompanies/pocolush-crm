@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { RESERVATION_STATUS, TIME_SLOTS } from '@/lib/member-constants';
+import { RESERVATION_STATUS } from '@/lib/member-constants';
+import { useTimeSlots } from '@/lib/use-time-slots';
 import type { BBQReservation } from '@/types';
 
 export default function ReservationHistoryPage() {
   const supabase = createClient();
   const [reservations, setReservations] = useState<BBQReservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getSlotLabel, getSlotTime } = useTimeSlots();
 
   useEffect(() => {
     async function load() {
@@ -46,7 +48,6 @@ export default function ReservationHistoryPage() {
         <div className="space-y-2">
           {reservations.map((r) => {
             const status = RESERVATION_STATUS[r.status];
-            const slot = TIME_SLOTS[r.time_slot];
             return (
               <Link key={r.id} href={`/member/reservation/${r.id}`}
                 className="block bg-white border border-border rounded-2xl p-4 hover:shadow-sm transition-shadow">
@@ -54,7 +55,7 @@ export default function ReservationHistoryPage() {
                   <div>
                     <p className="text-sm font-medium text-text-primary">바베큐장 {r.bbq_number}번</p>
                     <p className="text-[12px] text-text-secondary mt-0.5">
-                      {r.reservation_date.replace(/-/g, '.')} · {slot?.label} {slot?.time}
+                      {r.reservation_date.replace(/-/g, '.')} · {getSlotLabel(r.time_slot)} {getSlotTime(r.time_slot)}
                     </p>
                   </div>
                   <span className="text-[11px] font-medium px-2.5 py-1 rounded-full"

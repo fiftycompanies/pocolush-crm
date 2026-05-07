@@ -72,11 +72,8 @@ const PRODUCT_CATEGORY_LABEL: Record<string, string> = {
   etc: '기타',
 };
 
-const BBQ_TIME_SLOTS: Record<number, string> = {
-  1: '10:00-13:00',
-  2: '13:30-16:30',
-  3: '17:00-20:00',
-};
+// BBQ_TIME_SLOTS — DB에서 동적 로드 (059_bbq_time_slots.sql)
+// 하드코딩 제거됨. buildBbqTimeSlots() 함수로 대체
 
 const BBQ_STATUS_LABEL: Record<string, string> = {
   confirmed: '예약확정',
@@ -463,6 +460,13 @@ const CONFIGS: Record<string, ExportConfig> = {
       { header: '상태', key: 'status_label', width: 12 },
     ],
     query: async (supabase, params) => {
+      // 타임슬롯 DB 조회 (하드코딩 제거)
+      const { data: slots } = await supabase.from('bbq_time_slots').select('slot_number, label, start_time, end_time');
+      const slotLabels: Record<number, string> = {};
+      (slots || []).forEach((s: { slot_number: number; label: string; start_time: string; end_time: string }) => {
+        slotLabels[s.slot_number] = `${s.label} ${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}`;
+      });
+
       let q = supabase
         .from('bbq_reservations')
         .select('*, member:members(name, phone)')
@@ -488,11 +492,12 @@ const CONFIGS: Record<string, ExportConfig> = {
             r.member?.phone?.includes(search),
         );
       }
-      return rows;
+      // slotLabels를 각 row에 첨부 (transform에서 사용)
+      return rows.map((r: any) => ({ ...r, _slotLabels: slotLabels }));
     },
     transform: (row) => ({
       reservation_date: DATE_ONLY(row.reservation_date),
-      time_slot_label: BBQ_TIME_SLOTS[row.time_slot] ?? `타임${row.time_slot}`,
+      time_slot_label: row._slotLabels?.[row.time_slot] ?? `${row.time_slot}타임`,
       bbq_number: `${row.bbq_number}번`,
       member_name: row.member?.name ?? '',
       phone: row.member?.phone ?? '',

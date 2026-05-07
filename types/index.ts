@@ -202,13 +202,25 @@ export interface BBQFacility {
   created_at: string;
 }
 
+export interface BBQTimeSlot {
+  id: string;
+  slot_number: number;
+  label: string;
+  start_time: string;  // 'HH:MM:SS' (DB TIME type, 표시 시 .slice(0,5))
+  end_time: string;     // 'HH:MM:SS'
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export type ReservationStatus = 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 
 export interface BBQReservation {
   id: string;
   member_id: string;
   reservation_date: string;
-  time_slot: 1 | 2 | 3;
+  time_slot: number;
   bbq_number: number;
   party_size: number;
   status: ReservationStatus;

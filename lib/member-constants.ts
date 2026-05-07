@@ -14,11 +14,13 @@ export const RESERVATION_STATUS = {
   no_show: { label: '노쇼', color: '#DC2626', bg: '#FEF2F2' },
 } as const;
 
-export const TIME_SLOTS = {
+// TIME_SLOTS — DB 테이블 bbq_time_slots 로 이전됨 (059_bbq_time_slots.sql)
+// 폴백용으로 보존. 실제 데이터는 useTimeSlots() 훅 또는 DB 조회 사용
+export const TIME_SLOTS_FALLBACK: Record<number, { label: string; time: string }> = {
   1: { label: '1타임', time: '11:00 ~ 13:50' },
   2: { label: '2타임', time: '14:00 ~ 16:50' },
   3: { label: '3타임', time: '17:00 ~ 19:50' },
-} as const;
+};
 
 export const ORDER_STATUS = {
   payment_pending: { label: '결제 필요', color: '#DC2626', bg: '#FEF2F2' },

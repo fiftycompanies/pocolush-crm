@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import ReservationCalendar from '@/components/member/ReservationCalendar';
 import TimeSlotSelector from '@/components/member/TimeSlotSelector';
 import BBQGrid from '@/components/member/BBQGrid';
-import { TIME_SLOTS } from '@/lib/member-constants';
+import { useTimeSlots } from '@/lib/use-time-slots';
 import toast from 'react-hot-toast';
 import type { BBQFacility, BBQReservation, Member } from '@/types';
 
@@ -21,6 +21,10 @@ export default function ReservationPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // 타임슬롯 (active만)
+  const { timeSlots: activeTimeSlots, slotMap, refetch: refetchTimeSlots } = useTimeSlots(true);
+
   // R2: 활성 상품 + 이벤트 가격
   const [activeProduct, setActiveProduct] = useState<{ id: string; name: string; base_price: number; duration_minutes: number } | null>(null);
   const [eventPrice, setEventPrice] = useState<number | null>(null);
@@ -46,7 +50,8 @@ export default function ReservationPage() {
       setLoading(false);
     }
     init();
-  }, [supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // R2: 선택한 날짜 기준 이벤트 가격 조회
   useEffect(() => {
@@ -64,33 +69,38 @@ export default function ReservationPage() {
       .eq('time_slot', selectedSlot)
       .in('status', ['confirmed']);
     setReservations(data || []);
-  }, [supabase, selectedDate, selectedSlot]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, selectedSlot]);
 
   useEffect(() => {
     setSelectedBBQ(null);
     fetchReservations();
   }, [fetchReservations]);
 
-  // 타임별 가용 수
+  // 타임별 가용 수 (1쿼리 최적화)
   const [slotAvailability, setSlotAvailability] = useState<Record<number, number>>({});
   useEffect(() => {
-    if (!selectedDate) return;
+    if (!selectedDate || activeTimeSlots.length === 0) return;
     async function loadAvailability() {
       const activeCount = facilities.filter(f => f.is_active).length;
+      const { data: booked } = await supabase
+        .from('bbq_reservations')
+        .select('time_slot')
+        .eq('reservation_date', selectedDate!)
+        .eq('status', 'confirmed');
+      const counts: Record<number, number> = {};
+      (booked || []).forEach((r: { time_slot: number }) => {
+        counts[r.time_slot] = (counts[r.time_slot] || 0) + 1;
+      });
       const availability: Record<number, number> = {};
-      for (const slot of [1, 2, 3]) {
-        const { count } = await supabase
-          .from('bbq_reservations')
-          .select('*', { count: 'exact', head: true })
-          .eq('reservation_date', selectedDate)
-          .eq('time_slot', slot)
-          .eq('status', 'confirmed');
-        availability[slot] = activeCount - (count || 0);
-      }
+      activeTimeSlots.forEach(s => {
+        availability[s.slot_number] = activeCount - (counts[s.slot_number] || 0);
+      });
       setSlotAvailability(availability);
     }
     loadAvailability();
-  }, [supabase, selectedDate, facilities]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, facilities, activeTimeSlots]);
 
   const handleReserve = async () => {
     if (!member || !selectedDate || selectedSlot === null || selectedBBQ === null) return;
@@ -107,6 +117,10 @@ export default function ReservationPage() {
     if (error) {
       if (error.message.includes('SLOT_ALREADY_BOOKED')) {
         toast.error('이미 예약된 슬롯입니다. 다른 시간을 선택해주세요.');
+      } else if (error.message.includes('INVALID_TIME_SLOT')) {
+        toast.error('선택한 타임이 비활성화되었습니다. 다른 시간을 선택해주세요.');
+        refetchTimeSlots();
+        setSelectedSlot(null);
       } else {
         toast.error('예약에 실패했습니다.');
       }
@@ -127,6 +141,8 @@ export default function ReservationPage() {
   const price = eventPrice ?? activeProduct?.base_price ?? facilities.find(f => f.number === selectedBBQ)?.price ?? 30000;
   const priceIsEvent = eventPrice !== null && activeProduct && eventPrice !== activeProduct.base_price;
   const durationMin = activeProduct?.duration_minutes ?? 170;
+
+  const selectedSlotInfo = slotMap[selectedSlot as number];
 
   return (
     <div className="space-y-5">
@@ -163,7 +179,12 @@ export default function ReservationPage() {
       {/* Step 2: 타임 */}
       {selectedDate && (
         <div className="bg-white border border-border rounded-2xl p-4">
-          <TimeSlotSelector selectedSlot={selectedSlot} onSelect={(s) => { setSelectedSlot(s); setSelectedBBQ(null); }} availability={slotAvailability} />
+          <TimeSlotSelector
+            selectedSlot={selectedSlot}
+            onSelect={(s) => { setSelectedSlot(s); setSelectedBBQ(null); }}
+            availability={slotAvailability}
+            timeSlots={activeTimeSlots}
+          />
         </div>
       )}
 
@@ -191,13 +212,13 @@ export default function ReservationPage() {
       )}
 
       {/* 확인 모달 */}
-      {showConfirm && selectedDate && selectedSlot && selectedBBQ && (
+      {showConfirm && selectedDate && selectedSlot !== null && selectedBBQ !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowConfirm(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-lg" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-text-primary mb-4">예약 확인</h3>
             <div className="space-y-2 text-sm mb-6">
               <div className="flex justify-between"><span className="text-text-secondary">날짜</span><span className="font-medium">{selectedDate.replace(/-/g, '.')}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">시간</span><span className="font-medium">{TIME_SLOTS[selectedSlot as 1|2|3]?.label} {TIME_SLOTS[selectedSlot as 1|2|3]?.time}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">시간</span><span className="font-medium">{selectedSlotInfo?.label} {selectedSlotInfo?.time}</span></div>
               <div className="flex justify-between"><span className="text-text-secondary">장소</span><span className="font-medium">바베큐장 {selectedBBQ}번</span></div>
               <div className="flex justify-between"><span className="text-text-secondary">가격</span>
                 <span className="font-medium">

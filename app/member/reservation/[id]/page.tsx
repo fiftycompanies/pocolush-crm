@@ -4,7 +4,8 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { RESERVATION_STATUS, TIME_SLOTS } from '@/lib/member-constants';
+import { RESERVATION_STATUS } from '@/lib/member-constants';
+import { useTimeSlots } from '@/lib/use-time-slots';
 import toast from 'react-hot-toast';
 import type { BBQReservation } from '@/types';
 
@@ -15,6 +16,7 @@ export default function ReservationDetailPage({ params }: { params: Promise<{ id
   const [reservation, setReservation] = useState<BBQReservation | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const { getSlotLabel, getSlotTime } = useTimeSlots();
 
   useEffect(() => {
     async function load() {
@@ -56,7 +58,6 @@ export default function ReservationDetailPage({ params }: { params: Promise<{ id
   if (!reservation) return <div className="text-center py-20"><p className="text-sm text-text-tertiary">예약을 찾을 수 없습니다.</p></div>;
 
   const status = RESERVATION_STATUS[reservation.status];
-  const slot = TIME_SLOTS[reservation.time_slot];
   const canCancel = reservation.status === 'confirmed' && new Date(reservation.reservation_date) > new Date();
 
   return (
@@ -77,7 +78,7 @@ export default function ReservationDetailPage({ params }: { params: Promise<{ id
 
         <div className="space-y-2.5 text-sm">
           <div className="flex justify-between"><span className="text-text-secondary">날짜</span><span className="font-medium">{reservation.reservation_date.replace(/-/g, '.')}</span></div>
-          <div className="flex justify-between"><span className="text-text-secondary">시간</span><span className="font-medium">{slot?.label} {slot?.time}</span></div>
+          <div className="flex justify-between"><span className="text-text-secondary">시간</span><span className="font-medium">{getSlotLabel(reservation.time_slot)} {getSlotTime(reservation.time_slot)}</span></div>
           <div className="flex justify-between"><span className="text-text-secondary">인원</span><span className="font-medium">{reservation.party_size}명</span></div>
           <div className="flex justify-between"><span className="text-text-secondary">가격</span><span className="font-medium">{reservation.price.toLocaleString()}원</span></div>
           <div className="flex justify-between"><span className="text-text-secondary">결제</span><span className="font-medium">현장결제</span></div>

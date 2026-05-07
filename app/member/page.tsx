@@ -6,7 +6,8 @@ import { CalendarCheck, ShoppingBag, Bell, ChevronRight, BookOpen } from 'lucide
 import { createClient } from '@/lib/supabase/client';
 import MembershipCard from '@/components/member/MembershipCard';
 import GuideModal from '@/components/member/GuideModal';
-import { TIME_SLOTS, RESERVATION_STATUS, NOTICE_CATEGORIES } from '@/lib/member-constants';
+import { RESERVATION_STATUS, NOTICE_CATEGORIES } from '@/lib/member-constants';
+import { useTimeSlots } from '@/lib/use-time-slots';
 import { OFFICE_PHONE, OFFICE_PHONE_TEL } from '@/lib/constants';
 import type { Member, Membership, Farm, BBQReservation, Notice } from '@/types';
 
@@ -18,6 +19,7 @@ export default function MemberHomePage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
+  const { getSlotLabel, getSlotTime } = useTimeSlots();
 
   useEffect(() => {
     async function load() {
@@ -192,7 +194,7 @@ export default function MemberHomePage() {
             <div>
               <p className="text-sm font-medium text-text-primary">바베큐장 {nextReservation.bbq_number}번</p>
               <p className="text-[12px] text-text-secondary mt-0.5">
-                {nextReservation.reservation_date.replace(/-/g, '/')} · {TIME_SLOTS[nextReservation.time_slot]?.label} {TIME_SLOTS[nextReservation.time_slot]?.time}
+                {nextReservation.reservation_date.replace(/-/g, '/')} · {getSlotLabel(nextReservation.time_slot)} {getSlotTime(nextReservation.time_slot)}
               </p>
             </div>
             <span className="text-[11px] font-medium px-2.5 py-1 rounded-full"
