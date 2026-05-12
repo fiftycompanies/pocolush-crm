@@ -1,21 +1,28 @@
 'use client';
 
-import type { BBQFacility, BBQReservation } from '@/types';
+import type { BBQFacility } from '@/types';
+
+/**
+ * 061 RPC get_booked_facilities 반환 shape — 개인정보 비노출 위해 bbq_number + is_mine 만.
+ * 기존: BBQReservation[] (status, member_id 등 전 필드) → RLS+status 결함으로 변경.
+ */
+export interface BookedFacility {
+  bbq_number: number;
+  is_mine: boolean;
+}
 
 interface Props {
   facilities: BBQFacility[];
-  reservations: BBQReservation[];
+  bookedFacilities: BookedFacility[];
   selectedBBQ: number | null;
   onSelect: (bbqNumber: number) => void;
-  currentMemberId?: string;
 }
 
-export default function BBQGrid({ facilities, reservations, selectedBBQ, onSelect, currentMemberId }: Props) {
+export default function BBQGrid({ facilities, bookedFacilities, selectedBBQ, onSelect }: Props) {
   const getStatus = (facilityNumber: number) => {
-    const reservation = reservations.find(r => r.bbq_number === facilityNumber && r.status === 'confirmed');
-    if (!reservation) return 'available';
-    if (reservation.member_id === currentMemberId) return 'mine';
-    return 'booked';
+    const booked = bookedFacilities.find(b => b.bbq_number === facilityNumber);
+    if (!booked) return 'available';
+    return booked.is_mine ? 'mine' : 'booked';
   };
 
   return (
