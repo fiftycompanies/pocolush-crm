@@ -225,6 +225,10 @@ export interface BBQReservation {
   party_size: number;
   status: ReservationStatus;
   price: number;
+  /** 033 마이그레이션 — 예약 시점 상품 FK (가격 변경 후에도 보존) */
+  product_id: string | null;
+  /** 034 마이그레이션 — 예약 시점 스냅샷 가격 */
+  snapshotted_price: number | null;
   memo: string | null;
   cancelled_at: string | null;
   created_at: string;
