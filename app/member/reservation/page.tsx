@@ -121,6 +121,11 @@ export default function ReservationPage() {
         toast.error('선택한 타임이 비활성화되었습니다. 다른 시간을 선택해주세요.');
         refetchTimeSlots();
         setSelectedSlot(null);
+      } else if (error.message.includes('INACTIVE_FACILITY')) {
+        toast.error('선택한 시설이 비활성화되었습니다. 다른 시설을 선택해주세요.');
+        setSelectedBBQ(null);
+      } else if (error.message.includes('FACILITY_NOT_FOUND')) {
+        toast.error('선택한 시설을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
       } else {
         toast.error('예약에 실패했습니다.');
       }
