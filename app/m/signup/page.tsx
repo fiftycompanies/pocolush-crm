@@ -213,20 +213,52 @@ export default function MemberSignupPage() {
             </ul>
           </div>
 
-          {/* B. 개인정보 수집·이용 동의 (PIPA §15) */}
-          <label className="flex items-start gap-3 cursor-pointer px-1">
-            <input
-              type="checkbox"
-              checked={agreedPrivacy}
-              onChange={e => setAgreedPrivacy(e.target.checked)}
-              className="w-4 h-4 mt-0.5 rounded border-border accent-[#16A34A]"
-              aria-describedby="privacy-consent-desc"
-            />
-            <span id="privacy-consent-desc" className="text-[13px] text-text-secondary leading-relaxed">
-              <span className="text-text-primary font-medium">[필수]</span> 개인정보 수집·이용에 동의합니다.
-              이름, 연락처, 주소, 차량번호를 회원 관리 및 서비스 제공 목적으로 수집하며, 회원 탈퇴 시 즉시 파기합니다.
-            </span>
-          </label>
+          {/* B. 개인정보 수집·이용 동의 (PIPA §15 + §22①) — 4대 필수 고지 */}
+          <div className="border border-border rounded-xl bg-white">
+            <label className="flex items-start gap-3 cursor-pointer p-4">
+              <input
+                type="checkbox"
+                checked={agreedPrivacy}
+                onChange={e => setAgreedPrivacy(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded border-border accent-[#16A34A]"
+                aria-describedby="privacy-consent-desc"
+                data-testid="privacy-consent-checkbox"
+              />
+              <span id="privacy-consent-desc" className="text-[13px] text-text-secondary leading-relaxed">
+                <span className="text-text-primary font-medium">[필수]</span> 개인정보 수집·이용에 동의합니다.
+              </span>
+            </label>
+            {/* PIPA §15① 4대 필수 고지 */}
+            <details className="border-t border-border" data-testid="pipa-details">
+              <summary className="text-[12px] text-text-secondary px-4 py-2 cursor-pointer hover:bg-accent/30">
+                ▾ 4대 고지사항 (수집 항목 / 목적 / 보유기간 / 거부권) 자세히
+              </summary>
+              <div className="px-4 py-3 text-[12px] text-text-secondary space-y-2 bg-accent/20">
+                <div>
+                  <p className="font-medium text-text-primary">① 수집 항목 (필수)</p>
+                  <p>이름, 연락처, 이메일, 주소, 차량번호</p>
+                </div>
+                <div>
+                  <p className="font-medium text-text-primary">② 수집·이용 목적</p>
+                  <p>회원 관리, 서비스 제공, 계약 이행, 알림 발송</p>
+                </div>
+                <div>
+                  <p className="font-medium text-text-primary">③ 보유·이용 기간</p>
+                  <ul className="list-disc pl-4">
+                    <li>회원 정보: 회원 탈퇴 시 30일 grace 후 자동 파기</li>
+                    <li>거래·정산 기록: <strong>5년 보관</strong> (전자상거래법 §6③)</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-medium text-text-primary">④ 거부할 권리 및 불이익</p>
+                  <p>동의를 거부할 권리가 있으며, <strong>거부 시 회원가입이 제한</strong>됩니다.</p>
+                </div>
+                <p className="text-[11px] text-text-tertiary pt-1 border-t border-border">
+                  ※ 상세 처리방침은 <a href="/privacy" target="_blank" className="text-[#16A34A] hover:underline">개인정보처리방침</a> 참조
+                </p>
+              </div>
+            </details>
+          </div>
 
           {/* 가이드 읽기 (체크박스 밖, 독립 버튼 — UX BLOCKER-1 해결: 라벨 내부 인라인 금지) */}
           <div className="border-t border-dashed border-border pt-3">
