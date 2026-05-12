@@ -77,7 +77,7 @@ export default function StatusChangeModal({ open, member, newStatus, onClose, on
           <button onClick={onClose} className="px-4 py-2 border border-border rounded-xl text-sm">취소</button>
           <button onClick={handleChange} disabled={saving}
             className={`px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40 ${
-              newStatus === 'suspended' || newStatus === 'withdrawn' ? 'bg-red' : 'bg-primary'
+              newStatus === 'suspended' || newStatus === 'pending_deletion' || newStatus === 'deleted' ? 'bg-red' : 'bg-primary'
             }`}>
             {saving ? '변경 중...' : '변경'}
           </button>

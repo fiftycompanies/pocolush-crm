@@ -111,7 +111,10 @@ export interface ExpiringRental extends FarmRental {
 // 회원 서비스 타입
 // ═══════════════════════════════════════
 
-export type MemberStatus = 'pending' | 'approved' | 'suspended' | 'withdrawn';
+export type MemberStatus = 'pending' | 'approved' | 'suspended' | 'pending_deletion' | 'deleted';
+
+/** 063: 회원 라이프사이클 사유 분류 */
+export type MemberActionReason = 'member_request' | 'long_inactive' | 'abuse' | 'duplicate' | 'other';
 
 export interface Member {
   id: string;
@@ -134,6 +137,17 @@ export interface Member {
   approved_by: string | null;
   withdrawal_requested_at: string | null;
   withdrawal_reason: string | null;
+  /** 063 라이프사이클 — 비활성화 */
+  suspended_at: string | null;
+  suspended_reason: string | null;
+  suspended_by: string | null;
+  /** 063 라이프사이클 — 삭제 신청 (30일 grace) */
+  deletion_requested_at: string | null;
+  deletion_reason: string | null;
+  deletion_requested_by: string | null;
+  /** 063 라이프사이클 — PII 마스킹 완료 시점 */
+  deleted_at: string | null;
+  pii_purged: boolean;
   created_at: string;
   updated_at: string;
 }

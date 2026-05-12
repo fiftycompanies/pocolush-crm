@@ -1,10 +1,12 @@
 // 회원 서비스 상수
 
+// 063 회원 라이프사이클 — withdrawn 제거, pending_deletion / deleted 추가
 export const MEMBER_STATUS = {
   pending: { label: '승인대기', color: '#D97706', bg: '#FFFBEB' },
   approved: { label: '승인', color: '#059669', bg: '#ECFDF5' },
-  suspended: { label: '정지', color: '#DC2626', bg: '#FEF2F2' },
-  withdrawn: { label: '탈퇴', color: '#6B7280', bg: '#F3F4F6' },
+  suspended: { label: '비활성화', color: '#DC2626', bg: '#FEF2F2' },
+  pending_deletion: { label: '삭제 대기', color: '#EA580C', bg: '#FFEDD5' },
+  deleted: { label: '삭제됨', color: '#6B7280', bg: '#F3F4F6' },
 } as const;
 
 export const RESERVATION_STATUS = {
