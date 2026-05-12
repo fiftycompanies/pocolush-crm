@@ -4,16 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import ReservationCalendar from '@/components/member/ReservationCalendar';
 import TimeSlotSelector from '@/components/member/TimeSlotSelector';
-import BBQGrid from '@/components/member/BBQGrid';
+import BBQGrid, { type BookedFacility } from '@/components/member/BBQGrid';
 import { useTimeSlots } from '@/lib/use-time-slots';
 import toast from 'react-hot-toast';
-import type { BBQFacility, BBQReservation, Member } from '@/types';
+import type { BBQFacility, Member } from '@/types';
 
 export default function ReservationPage() {
   const supabase = createClient();
   const [member, setMember] = useState<Member | null>(null);
   const [facilities, setFacilities] = useState<BBQFacility[]>([]);
-  const [reservations, setReservations] = useState<BBQReservation[]>([]);
+  const [bookedFacilities, setBookedFacilities] = useState<BookedFacility[]>([]);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
@@ -60,15 +60,23 @@ export default function ReservationPage() {
       .then(({ data }) => setEventPrice(typeof data === 'number' ? data : null));
   }, [supabase, activeProduct, selectedDate]);
 
+  // 061 RPC 사용 — RLS 우회 + status IN (confirmed, completed) 정확 카운팅.
+  //   기존 .from('bbq_reservations').select('*') 는 두 결함 동시 발생:
+  //   1) status='confirmed' 만 카운팅 → completed 변환된 예약 누락
+  //   2) member_select RLS 가 본인+admin 만 노출 → 타 회원 예약을 가용성 표시 못함
+  //   RPC 는 SECURITY DEFINER + bbq_number 만 노출 (개인정보 비노출).
   const fetchReservations = useCallback(async () => {
     if (!selectedDate || selectedSlot === null) return;
-    const { data } = await supabase
-      .from('bbq_reservations')
-      .select('*')
-      .eq('reservation_date', selectedDate)
-      .eq('time_slot', selectedSlot)
-      .in('status', ['confirmed']);
-    setReservations(data || []);
+    const { data, error } = await supabase.rpc('get_booked_facilities', {
+      p_date: selectedDate,
+      p_slot: selectedSlot,
+    });
+    if (error) {
+      toast.error('점유 시설 조회 실패: ' + error.message);
+      setBookedFacilities([]);
+      return;
+    }
+    setBookedFacilities((data ?? []) as BookedFacility[]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedSlot]);
 
@@ -77,30 +85,29 @@ export default function ReservationPage() {
     fetchReservations();
   }, [fetchReservations]);
 
-  // 타임별 가용 수 (1쿼리 최적화)
+  // 타임별 가용 수 — 061 RPC 사용 (RLS 우회 + status IN confirmed+completed 정확 카운팅).
+  //   기존 코드 결함: status='confirmed' 만 카운팅 + RLS 가 본인 예약만 노출 → 잘못된 가용성.
+  //   RPC 반환: { slot_number, booked_count, available_count } per slot.
   const [slotAvailability, setSlotAvailability] = useState<Record<number, number>>({});
-  useEffect(() => {
+  const loadAvailability = useCallback(async () => {
     if (!selectedDate || activeTimeSlots.length === 0) return;
-    async function loadAvailability() {
-      const activeCount = facilities.filter(f => f.is_active).length;
-      const { data: booked } = await supabase
-        .from('bbq_reservations')
-        .select('time_slot')
-        .eq('reservation_date', selectedDate!)
-        .eq('status', 'confirmed');
-      const counts: Record<number, number> = {};
-      (booked || []).forEach((r: { time_slot: number }) => {
-        counts[r.time_slot] = (counts[r.time_slot] || 0) + 1;
-      });
-      const availability: Record<number, number> = {};
-      activeTimeSlots.forEach(s => {
-        availability[s.slot_number] = activeCount - (counts[s.slot_number] || 0);
-      });
-      setSlotAvailability(availability);
+    const { data, error } = await supabase.rpc('get_bbq_availability', {
+      p_date: selectedDate,
+    });
+    if (error) {
+      toast.error('가용성 조회 실패: ' + error.message);
+      return;
     }
-    loadAvailability();
+    const rows = (data ?? []) as { slot_number: number; booked_count: number; available_count: number }[];
+    const availability: Record<number, number> = {};
+    rows.forEach(r => { availability[r.slot_number] = r.available_count; });
+    setSlotAvailability(availability);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, facilities, activeTimeSlots]);
+  }, [selectedDate, activeTimeSlots]);
+
+  useEffect(() => {
+    loadAvailability();
+  }, [loadAvailability]);
 
   const handleReserve = async () => {
     if (!member || !selectedDate || selectedSlot === null || selectedBBQ === null) return;
@@ -133,7 +140,16 @@ export default function ReservationPage() {
       toast.success('예약이 완료되었습니다!');
       setShowConfirm(false);
       setSelectedBBQ(null);
-      fetchReservations();
+      // 예약 성공 → 같은 슬롯의 점유 시설 + 슬롯별 가용성 모두 즉시 refetch.
+      // Promise.allSettled — 둘 중 하나 실패해도 다른 한쪽은 반영.
+      const results = await Promise.allSettled([
+        fetchReservations(),
+        loadAvailability(),
+      ]);
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        toast.error('예약은 성공했으나 일부 정보 갱신에 실패했습니다. 새로고침 해주세요.');
+      }
     }
     setSubmitting(false);
   };
@@ -198,10 +214,9 @@ export default function ReservationPage() {
         <div className="bg-white border border-border rounded-2xl p-4">
           <BBQGrid
             facilities={facilities}
-            reservations={reservations}
+            bookedFacilities={bookedFacilities}
             selectedBBQ={selectedBBQ}
             onSelect={setSelectedBBQ}
-            currentMemberId={member?.id}
           />
         </div>
       )}
