@@ -9,7 +9,8 @@ export type MemberDerivedStatus =
   | 'active'
   | 'expired'
   | 'suspended'
-  | 'withdrawn';
+  | 'pending_deletion'  // 063: 30일 grace
+  | 'deleted';          // 063: PII 마스킹 완료
 
 export interface MemberWithStatusRow {
   id: string;
@@ -18,7 +19,8 @@ export interface MemberWithStatusRow {
   name: string;
   phone: string | null;
   address: string | null;
-  member_status: 'pending' | 'approved' | 'suspended' | 'withdrawn';
+  // 063: withdrawn 제거, pending_deletion / deleted 추가
+  member_status: 'pending' | 'approved' | 'suspended' | 'pending_deletion' | 'deleted';
   farming_experience: boolean | null;
   interested_crops: string[] | null;
   family_size: number | null;
@@ -29,6 +31,8 @@ export interface MemberWithStatusRow {
   approved_by: string | null;
   withdrawal_requested_at: string | null;
   withdrawal_reason: string | null;
+  /** 063 라이프사이클 (RPC 응답에 포함되면 사용) */
+  deletion_requested_at?: string | null;
   created_at: string;
   updated_at: string;
   active_rental_count: number;
@@ -43,7 +47,8 @@ export function deriveMemberStatus(m: {
   nearest_membership_end: string | null;
 }): MemberDerivedStatus {
   if (m.member_status === 'pending') return 'pending';
-  if (m.member_status === 'withdrawn') return 'withdrawn';
+  if (m.member_status === 'deleted') return 'deleted';
+  if (m.member_status === 'pending_deletion') return 'pending_deletion';
   if (m.member_status === 'suspended') return 'suspended';
   if (m.active_rental_count === 0) return 'approved_no_rental';
   if (m.active_membership_count === 0) return 'rental_no_membership';
@@ -62,8 +67,9 @@ export const LABEL_OF: Record<MemberDerivedStatus, string> = {
   rental_no_membership: '회원권미발급',
   active: '계약활성',
   expired: '회원권만료',
-  suspended: '정지',
-  withdrawn: '탈퇴',
+  suspended: '비활성화',
+  pending_deletion: '삭제 대기',
+  deleted: '삭제됨',
 };
 
 export const BADGE_CLASS: Record<MemberDerivedStatus, string> = {
@@ -73,7 +79,8 @@ export const BADGE_CLASS: Record<MemberDerivedStatus, string> = {
   active: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   expired: 'bg-gray-100 text-gray-600 border border-gray-200',
   suspended: 'bg-red-50 text-red-700 border border-red-200',
-  withdrawn: 'bg-gray-100 text-gray-500 border border-gray-200',
+  pending_deletion: 'bg-orange-100 text-orange-800 border border-orange-300',
+  deleted: 'bg-gray-100 text-gray-400 border border-gray-200',
 };
 
 // 필터 탭 순서
@@ -87,8 +94,9 @@ export const DERIVED_FILTER_TABS: Array<{
   { key: 'active', label: '계약활성' },
   { key: 'rental_no_membership', label: '회원권미발급' },
   { key: 'expired', label: '만료' },
-  { key: 'suspended', label: '정지' },
-  { key: 'withdrawn', label: '탈퇴' },
+  { key: 'suspended', label: '비활성화' },
+  { key: 'pending_deletion', label: '삭제 대기' },
+  { key: 'deleted', label: '삭제됨' },
 ];
 
 // 만료까지 남은 일수 (음수면 이미 지남)
