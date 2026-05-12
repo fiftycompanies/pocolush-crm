@@ -47,8 +47,9 @@ function applyDateFilter(q: any, params: URLSearchParams, dateField: string) {
 const MEMBER_STATUS_LABEL: Record<string, string> = {
   pending: '승인대기',
   approved: '승인',
-  suspended: '정지',
-  withdrawn: '탈퇴',
+  suspended: '비활성화',
+  pending_deletion: '삭제 대기',
+  deleted: '삭제됨',
 };
 
 const NOTICE_CATEGORY_LABEL: Record<string, string> = {

@@ -254,7 +254,7 @@ export default function ZoneTransferModal({ isOpen, onClose, membershipId, membe
                 <input
                   type="number"
                   value={priceDiff}
-                  onChange={e => { setPriceDiff(e.target.value); setValidation(null); }}
+                  onChange={e => setPriceDiff(e.target.value)}
                   placeholder="0"
                   className="border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500"
                 />
