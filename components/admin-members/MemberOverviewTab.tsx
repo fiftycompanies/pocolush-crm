@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { FileText, ShoppingBag, Ticket, Flame, UserCheck, CreditCard, ExternalLink } from 'lucide-react';
+import { FileText, ShoppingBag, Ticket, Flame, UserCheck, CreditCard, ExternalLink, Building2 } from 'lucide-react';
 import type { useMemberDetail } from '@/lib/use-member-detail';
 import type { Membership } from '@/types';
+import ZoneTransferModal from './ZoneTransferModal';
 
 const ACTIVITY_ICONS: Record<string, { icon: typeof FileText; color: string }> = {
   rental: { icon: FileText, color: '#3B82F6' },
@@ -21,6 +23,9 @@ interface Props {
 export default function MemberOverviewTab({ data }: Props) {
   const { rentals, orders, coupons, reservations, activities, membership, allMemberships, member } = data;
   const planName = (membership as { plan_name?: string } | null)?.plan_name || null;
+  const [zoneModalOpen, setZoneModalOpen] = useState(false);
+  // 064: Zone 이전 가능 여부 — active 멤버십 + farm_id 보유 회원만
+  const activeMs = allMemberships.find(ms => ms.status === 'active');
 
   // 회원권 이력 상태 스타일 + 라벨
   const msStatusClass = (status: string): string => {
@@ -92,14 +97,26 @@ export default function MemberOverviewTab({ data }: Props) {
         <div className="bg-card border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-text-primary">회원권 이력 ({allMemberships.length})</h3>
-            {allMemberships.length > 5 && (
-              <Link
-                href={`/dashboard/memberships?member_id=${member.id}`}
-                className="text-xs text-primary hover:underline"
-              >
-                전체 보기 →
-              </Link>
-            )}
+            <div className="flex items-center gap-2">
+              {activeMs && activeMs.farm_id && (
+                <button
+                  type="button"
+                  onClick={() => setZoneModalOpen(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-2.5 py-1"
+                  aria-label="활성 회원권의 zone 이전"
+                >
+                  <Building2 className="size-3.5" aria-hidden="true" /> Zone 이전
+                </button>
+              )}
+              {allMemberships.length > 5 && (
+                <Link
+                  href={`/dashboard/memberships?member_id=${member.id}`}
+                  className="text-xs text-primary hover:underline"
+                >
+                  전체 보기 →
+                </Link>
+              )}
+            </div>
           </div>
           {allMemberships.length === 0 ? (
             <p className="text-xs text-text-tertiary text-center py-4">발급 이력이 없습니다.</p>
@@ -160,6 +177,18 @@ export default function MemberOverviewTab({ data }: Props) {
           </div>
         )}
       </div>
+
+      {/* 064 Zone 이전 모달 */}
+      {member && activeMs && (
+        <ZoneTransferModal
+          isOpen={zoneModalOpen}
+          onClose={() => setZoneModalOpen(false)}
+          membershipId={activeMs.id}
+          memberName={member.name}
+          currentFarmId={activeMs.farm_id}
+          onSuccess={data.refetch}
+        />
+      )}
     </div>
   );
 }
