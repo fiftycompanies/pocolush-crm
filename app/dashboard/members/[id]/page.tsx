@@ -10,6 +10,7 @@ import MemberRentalsTab from '@/components/admin-members/MemberRentalsTab';
 import MemberOrdersTab from '@/components/admin-members/MemberOrdersTab';
 import MemberCouponsTab from '@/components/admin-members/MemberCouponsTab';
 import MemberBBQTab from '@/components/admin-members/MemberBBQTab';
+import MemberDangerZone from '@/components/admin-members/MemberDangerZone';
 
 const TABS = [
   { key: 'overview', label: '개요', icon: LayoutDashboard },
@@ -89,6 +90,13 @@ export default function MemberDetailPage() {
           {tab === 'orders' && <MemberOrdersTab orders={data.orders} />}
           {tab === 'coupons' && <MemberCouponsTab coupons={data.coupons} />}
           {tab === 'bbq' && <MemberBBQTab reservations={data.reservations} />}
+
+          {/* 063 라이프사이클 — 위험 구역 (overview 탭에서만 표시) */}
+          {tab === 'overview' && data.member && (
+            <div className="mt-6">
+              <MemberDangerZone member={data.member} onRefresh={data.refetch} />
+            </div>
+          )}
         </div>
       </div>
     </div>
