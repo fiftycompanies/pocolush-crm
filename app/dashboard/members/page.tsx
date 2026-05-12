@@ -19,6 +19,7 @@ import {
 } from '@/lib/member-derived-status';
 import ExportButton from '@/components/ui/ExportButton';
 import AddMemberModal from '@/components/admin-members/AddMemberModal';
+import MemberRowActions from '@/components/admin-members/MemberRowActions';
 import { auditLog } from '@/lib/audit-log';
 
 type Row = MemberWithStatusRow & { derived: MemberDerivedStatus };
@@ -303,11 +304,19 @@ export default function MembersPage() {
                             <RotateCcw className="size-3.5" /> 재개
                           </button>
                         )}
-                        {member.withdrawal_requested_at && member.derived !== 'withdrawn' && (
+                        {member.withdrawal_requested_at && member.derived !== 'deleted' && member.derived !== 'pending_deletion' && (
                           <span className="flex items-center gap-1 text-[10px] text-red">
                             <Clock className="size-3" /> 탈퇴 요청
                           </span>
                         )}
+
+                        {/* 063 라이프사이클 — ⋮ 액션 메뉴 (비활성화/재활성화/삭제 신청/복원) */}
+                        <MemberRowActions
+                          memberId={member.id}
+                          memberName={member.name}
+                          derived={member.derived}
+                          onAfterAction={fetchMembers}
+                        />
                       </div>
                     </td>
                   </tr>
