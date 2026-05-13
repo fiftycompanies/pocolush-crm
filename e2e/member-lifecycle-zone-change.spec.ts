@@ -73,11 +73,24 @@ test.describe('063 회원 라이프사이클 — admin UI', () => {
     await adminLogin(page);
     await page.goto(`${BASE}/dashboard/members`);
     await page.waitForLoadState('networkidle');
-    await page.locator('tbody tr').first().click();
+    // "계약활성" 회원 우선 선택 (Danger Zone 노출 보장)
+    const activeRow = page.locator('tr', { hasText: /계약활성/ }).first();
+    if (await activeRow.count() === 0) {
+      // fallback — 첫 행
+      await page.locator('tbody tr').first().click();
+    } else {
+      await activeRow.click();
+    }
     await page.waitForURL(/\/dashboard\/members\/[a-f0-9-]+/);
     await page.waitForLoadState('networkidle');
 
-    const suspendBtn = page.getByRole('button', { name: /비활성화$/ }).first();
+    // overview 탭 활성 보장
+    const overviewTab = page.getByRole('button', { name: /^개요$/ });
+    if (await overviewTab.count() > 0) await overviewTab.click();
+
+    // Danger Zone 안의 [비활성화] 버튼 — fieldset 안에 있어 동명 셀렉터 충돌 회피
+    const dangerZone = page.locator('fieldset', { hasText: '위험 구역' });
+    const suspendBtn = dangerZone.getByRole('button', { name: /비활성화/ }).first();
     const visible = await suspendBtn.isVisible().catch(() => false);
     if (!visible) {
       test.skip(true, '비활성화 버튼 없음 (이미 suspended 또는 deleted 상태)');
@@ -85,10 +98,8 @@ test.describe('063 회원 라이프사이클 — admin UI', () => {
     }
     await suspendBtn.click();
 
-    // 모달 떠야 함
     const modal = page.locator('[role=dialog]').filter({ hasText: '회원 비활성화' });
     await expect(modal).toBeVisible({ timeout: 3000 });
-    // 사유 select
     await expect(modal.locator('select')).toBeVisible();
 
     await page.screenshot({ path: '/tmp/e2e-3-suspend-modal.png', fullPage: true });
@@ -161,8 +172,9 @@ test.describe('070 회원 self-service 탈퇴 + PIPA', () => {
     await expect(page.getByRole('heading', { name: '개인정보처리방침' })).toBeVisible();
     await expect(page.getByText('1. 수집하는 개인정보 항목')).toBeVisible();
     await expect(page.getByText('7. 개인정보 파기 절차')).toBeVisible();
-    await expect(page.getByText(/30일 grace/)).toBeVisible();
-    await expect(page.getByText(/5년 보관/)).toBeVisible();
+    // 30일 grace / 5년 보관 은 페이지에 여러 번 등장 — first() 로 strict mode 회피
+    await expect(page.getByText(/30일 grace/).first()).toBeVisible();
+    await expect(page.getByText(/5년 보관/).first()).toBeVisible();
 
     await page.screenshot({ path: '/tmp/e2e-6-privacy-policy.png', fullPage: true });
   });
