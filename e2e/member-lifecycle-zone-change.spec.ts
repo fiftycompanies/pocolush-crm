@@ -73,22 +73,28 @@ test.describe('063 회원 라이프사이클 — admin UI', () => {
     await adminLogin(page);
     await page.goto(`${BASE}/dashboard/members`);
     await page.waitForLoadState('networkidle');
-    await page.locator('tbody tr').first().click();
+
+    // "계약활성" 필터 탭 클릭 → 첫 행 = active 보장
+    const activeTab = page.getByRole('button', { name: /^계약활성$/ }).first();
+    await activeTab.click();
+    await page.waitForTimeout(500); // 필터 적용 대기
+
+    const firstRow = page.locator('tbody tr').first();
+    await expect(firstRow).toBeVisible({ timeout: 5000 });
+    await firstRow.click();
+
     await page.waitForURL(/\/dashboard\/members\/[a-f0-9-]+/);
     await page.waitForLoadState('networkidle');
 
-    const suspendBtn = page.getByRole('button', { name: /비활성화$/ }).first();
-    const visible = await suspendBtn.isVisible().catch(() => false);
-    if (!visible) {
-      test.skip(true, '비활성화 버튼 없음 (이미 suspended 또는 deleted 상태)');
-      return;
-    }
+    // Danger Zone 안의 [비활성화] 버튼
+    const dangerZone = page.locator('fieldset', { hasText: '위험 구역' });
+    await expect(dangerZone).toBeVisible({ timeout: 5000 });
+    const suspendBtn = dangerZone.getByRole('button', { name: /비활성화/ }).first();
+    await expect(suspendBtn).toBeVisible({ timeout: 3000 });
     await suspendBtn.click();
 
-    // 모달 떠야 함
     const modal = page.locator('[role=dialog]').filter({ hasText: '회원 비활성화' });
     await expect(modal).toBeVisible({ timeout: 3000 });
-    // 사유 select
     await expect(modal.locator('select')).toBeVisible();
 
     await page.screenshot({ path: '/tmp/e2e-3-suspend-modal.png', fullPage: true });
@@ -101,27 +107,25 @@ test.describe('064 Zone 이전 — admin UI', () => {
     await adminLogin(page);
     await page.goto(`${BASE}/dashboard/members`);
     await page.waitForLoadState('networkidle');
-    // active 회원 (계약 활성 derived) 찾기
-    const activeRow = page.locator('tr', { hasText: /계약활성|회원권만료/ }).first();
-    if (await activeRow.count() === 0) {
-      test.skip(true, 'active 회원 없음');
-      return;
-    }
-    await activeRow.click();
+
+    // "계약활성" 필터로 active 회원 보장
+    const activeTab = page.getByRole('button', { name: /^계약활성$/ }).first();
+    await activeTab.click();
+    await page.waitForTimeout(500);
+
+    const firstRow = page.locator('tbody tr').first();
+    await expect(firstRow).toBeVisible({ timeout: 5000 });
+    await firstRow.click();
     await page.waitForURL(/\/dashboard\/members\/[a-f0-9-]+/);
     await page.waitForLoadState('networkidle');
 
-    const zoneBtn = page.getByRole('button', { name: /Zone 이전/ }).first();
-    const visible = await zoneBtn.isVisible().catch(() => false);
-    if (!visible) {
-      test.skip(true, 'Zone 이전 버튼 없음 (active 멤버십 + farm 없음)');
-      return;
-    }
+    // aria-label="활성 회원권의 zone 이전" (소문자) → case-insensitive
+    const zoneBtn = page.getByRole('button', { name: /zone 이전/i }).first();
+    await expect(zoneBtn).toBeVisible({ timeout: 5000 });
     await zoneBtn.click();
 
     const modal = page.locator('[role=dialog]').filter({ hasText: /Zone 이전/ });
     await expect(modal).toBeVisible({ timeout: 5000 });
-    // Step 1 입력 영역 확인
     await expect(modal.getByText('정보 입력')).toBeVisible();
     await expect(modal.getByText(/이동할 자리/)).toBeVisible();
     await expect(modal.getByText(/가격 차이/)).toBeVisible();
@@ -161,8 +165,9 @@ test.describe('070 회원 self-service 탈퇴 + PIPA', () => {
     await expect(page.getByRole('heading', { name: '개인정보처리방침' })).toBeVisible();
     await expect(page.getByText('1. 수집하는 개인정보 항목')).toBeVisible();
     await expect(page.getByText('7. 개인정보 파기 절차')).toBeVisible();
-    await expect(page.getByText(/30일 grace/)).toBeVisible();
-    await expect(page.getByText(/5년 보관/)).toBeVisible();
+    // 30일 grace / 5년 보관 은 페이지에 여러 번 등장 — first() 로 strict mode 회피
+    await expect(page.getByText(/30일 grace/).first()).toBeVisible();
+    await expect(page.getByText(/5년 보관/).first()).toBeVisible();
 
     await page.screenshot({ path: '/tmp/e2e-6-privacy-policy.png', fullPage: true });
   });
