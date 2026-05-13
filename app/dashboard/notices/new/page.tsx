@@ -27,8 +27,12 @@ export default function NewNoticePage() {
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [savedOrPublished, setSavedOrPublished] = useState(false);
   const creatingRef = useRef(false);
+  // 🐛 BUG FIX: state + dependency 패턴은 closure 버그 — savedOrPublished=true 변경 시
+  //   이전 effect cleanup 이 closure 의 false 로 실행되어 발행된 row 까지 DELETE 됨.
+  //   ref 로 추적하면 cleanup 안에서 항상 최신 값 참조 (closure 회피).
+  const draftIdRef = useRef<string | null>(null);
+  const savedOrPublishedRef = useRef(false);
 
   // 1. 빈 draft 공지 선행 생성 (마운트 1회)
   useEffect(() => {
@@ -52,27 +56,29 @@ export default function NewNoticePage() {
         return;
       }
       setDraftId(data.id);
+      draftIdRef.current = data.id;
     })();
   }, [supabase]);
 
-  // 2. 이탈 시 빈 draft 정리 (본문·제목 모두 비어있으면)
-  //    발행·임시저장 상태면 남김 (savedOrPublished 플래그)
+  // 2. 이탈 시 빈 draft 정리 — unmount 시에만 1회 실행 (closure 버그 회피)
+  //    ref 로 항상 최신 값 참조
   useEffect(() => {
     return () => {
-      if (!draftId || savedOrPublished) return;
-      // best-effort cleanup — fire & forget
-      // 이미지까지 0장이면 즉시 DELETE, 그 외엔 cron 에서 7일 후 처리
+      const id = draftIdRef.current;
+      if (!id || savedOrPublishedRef.current) return;
       (async () => {
         const { count } = await supabase
           .from('notice_images')
           .select('id', { count: 'exact', head: true })
-          .eq('notice_id', draftId);
+          .eq('notice_id', id);
         if ((count ?? 0) === 0) {
-          await supabase.from('notices').delete().eq('id', draftId);
+          await supabase.from('notices').delete().eq('id', id);
         }
       })();
     };
-  }, [draftId, savedOrPublished, supabase]);
+    // 의도적으로 dependency 비움 — unmount 시 1회만 cleanup
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = async (
     data: { title: string; content: string; category: string },
@@ -101,7 +107,8 @@ export default function NewNoticePage() {
     } else if (!updated || updated.length === 0) {
       toast.error('공지 저장에 실패했습니다. 다시 시도해주세요.');
     } else {
-      setSavedOrPublished(true);
+      // ref 먼저 (cleanup 안전), state 나중 (re-render 최소화)
+      savedOrPublishedRef.current = true;
       toast.success(publish ? '공지가 발행되었습니다.' : '임시저장되었습니다.');
       router.push('/dashboard/notices');
     }
