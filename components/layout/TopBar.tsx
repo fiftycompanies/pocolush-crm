@@ -20,6 +20,10 @@ export default function TopBar() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
+    let mounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let authSub: { subscription: { unsubscribe(): void } } | null = null;
+
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -41,24 +45,40 @@ export default function TopBar() {
       if (data) setNotifications(data);
     };
 
-    fetchProfile();
-    fetchNotifications();
+    // Realtime 토큰 setAuth — anon 401 무한 재시도 차단 (use-bbq-board 패턴 답습)
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+      const sub = supabase.auth.onAuthStateChange((_event, s) => {
+        if (s?.access_token) supabase.realtime.setAuth(s.access_token);
+      });
+      authSub = sub.data;
 
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-          const notif = payload.new as Notification;
-          setNotifications((prev) => [notif, ...prev].slice(0, 10));
-          toast(notif.message, { icon: '🔔' });
-        }
-      )
-      .subscribe();
+      if (!mounted) return;
+
+      fetchProfile();
+      fetchNotifications();
+
+      channel = supabase
+        .channel('notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications' },
+          (payload) => {
+            const notif = payload.new as Notification;
+            setNotifications((prev) => [notif, ...prev].slice(0, 10));
+            toast(notif.message, { icon: '🔔' });
+          }
+        )
+        .subscribe();
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      mounted = false;
+      if (channel) supabase.removeChannel(channel);
+      if (authSub?.subscription) authSub.subscription.unsubscribe();
     };
   }, [supabase]);
 
