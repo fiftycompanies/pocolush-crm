@@ -19,7 +19,7 @@ export default function MemberBBQTab({ reservations }: Props) {
         <thead><tr className="border-b border-border text-left">
           <th className="px-4 py-3 font-medium text-text-secondary">날짜</th>
           <th className="px-4 py-3 font-medium text-text-secondary">시간</th>
-          <th className="px-4 py-3 font-medium text-text-secondary">바베큐장</th>
+          <th className="px-4 py-3 font-medium text-text-secondary">평상</th>
           <th className="px-4 py-3 font-medium text-text-secondary">인원</th>
           <th className="px-4 py-3 font-medium text-text-secondary">금액</th>
           <th className="px-4 py-3 font-medium text-text-secondary">상태</th>

@@ -123,7 +123,7 @@ export function useMemberDetail(memberId: string) {
     (bbqRes.data || []).forEach(b => acts.push({
       id: b.id, type: 'bbq',
       title: 'BBQ 예약',
-      description: `${b.bbq_number}번 바베큐장 — ${b.reservation_date}`,
+      description: `${b.bbq_number}번 평상 — ${b.reservation_date}`,
       date: b.created_at,
     }));
     (logRes.data || []).forEach(l => acts.push({

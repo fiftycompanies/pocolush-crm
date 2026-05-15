@@ -192,7 +192,7 @@ export default function MemberHomePage() {
         {nextReservation ? (
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-text-primary">바베큐장 {nextReservation.bbq_number}번</p>
+              <p className="text-sm font-medium text-text-primary">{nextReservation.bbq_number}번 평상</p>
               <p className="text-[12px] text-text-secondary mt-0.5">
                 {nextReservation.reservation_date.replace(/-/g, '/')} · {getSlotLabel(nextReservation.time_slot)} {getSlotTime(nextReservation.time_slot)}
               </p>

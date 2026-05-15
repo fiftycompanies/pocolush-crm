@@ -76,7 +76,7 @@ export default function DashboardList() {
       const st = RESERVATION_STATUS[b.status as keyof typeof RESERVATION_STATUS];
       reqs.push({
         id: b.id, type: 'bbq', name: b.member?.name || '-',
-        detail: `${b.bbq_number}번 바베큐 · ${b.reservation_date}`,
+        detail: `${b.bbq_number}번 평상 · ${b.reservation_date}`,
         date: b.reservation_date, status: b.status,
         statusMeta: st || { label: b.status, color: '#6B7280', bg: '#F3F4F6' },
         link: '/dashboard/requests?type=bbq',
