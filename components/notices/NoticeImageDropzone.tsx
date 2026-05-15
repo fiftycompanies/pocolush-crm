@@ -229,7 +229,7 @@ export default function NoticeImageDropzone({
                     disabled={i === 0}
                     onClick={() => moveImage(img.id, 'left')}
                     aria-label={`${i + 1}번 이미지 왼쪽으로 이동`}
-                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <ChevronLeft className="size-4" aria-hidden="true" />
                   </button>
@@ -241,7 +241,7 @@ export default function NoticeImageDropzone({
                     disabled={i === images.length - 1}
                     onClick={() => moveImage(img.id, 'right')}
                     aria-label={`${i + 1}번 이미지 오른쪽으로 이동`}
-                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="size-10 inline-flex items-center justify-center rounded bg-white/90 hover:bg-white text-text-primary shadow-xs disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <ChevronRight className="size-4" aria-hidden="true" />
                   </button>

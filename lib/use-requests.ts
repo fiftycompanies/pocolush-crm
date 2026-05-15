@@ -42,12 +42,10 @@ export interface UnifiedRequest {
   bbqMeta?: BBQRequestMeta;
 }
 
-// 통합 상태 매핑
+// 통합 상태 매핑 (G2: 새 UnifiedStatus 멤버 추가 시 컴파일 에러로 silent miss 차단)
 function mapBBQStatus(s: string): UnifiedStatus {
-  // ⭐ Q8: confirmed → '예약완료' 분리 (운영자 혼선 해결)
   if (s === 'confirmed') return 'confirmed';
   if (s === 'completed') return 'completed';
-  // ⭐ E3: no_show 별도 매핑 (기존 버그: else → cancelled)
   if (s === 'no_show') return 'no_show';
   return 'cancelled';
 }
@@ -64,14 +62,28 @@ function mapCouponStatus(s: string): UnifiedStatus {
   return 'cancelled';
 }
 
+// G2: 표시용 한국어 라벨 — UnifiedStatus union 모든 멤버 강제
+export const UNIFIED_STATUS_LABEL = {
+  payment_pending: '결제 필요',
+  pending: '대기',
+  confirmed: '예약완료',
+  processing: '처리중',
+  completed: '완료',
+  no_show: '노쇼',
+  cancelled: '취소',
+} as const satisfies Record<UnifiedStatus, string>;
+
 export function useRequests(typeFilter?: string, statusFilter?: string) {
   const supabase = createClient();
   const { slotMap, getSlotLabel, getSlotTime } = useTimeSlots();
   const [items, setItems] = useState<UnifiedRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);  // G3: UI 노출용
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    const errors: string[] = [];
     const results: UnifiedRequest[] = [];
 
     if (!typeFilter || typeFilter === 'bbq') {
@@ -83,6 +95,7 @@ export function useRequests(typeFilter?: string, statusFilter?: string) {
 
       if (error) {
         console.error('[use-requests] bbq fetch error:', error.message);
+        errors.push(`BBQ: ${error.message}`);
       } else if (data && data.length > 0) {
         // E1: 이벤트 판정 — bbq_events 매칭
         const productIds = [
@@ -155,6 +168,7 @@ export function useRequests(typeFilter?: string, statusFilter?: string) {
         .limit(100);
       if (error) {
         console.error('[use-requests] order fetch error:', error.message);
+        errors.push(`스토어: ${error.message}`);
       } else {
         (data || []).forEach((o: {
           id: string; total_price: number | null; created_at: string;
@@ -186,6 +200,7 @@ export function useRequests(typeFilter?: string, statusFilter?: string) {
         .limit(100);
       if (error) {
         console.error('[use-requests] coupon fetch error:', error.message);
+        errors.push(`쿠폰: ${error.message}`);
       } else {
         (data || []).forEach((c: {
           id: string; created_at: string; status: string;
@@ -215,6 +230,7 @@ export function useRequests(typeFilter?: string, statusFilter?: string) {
       : results;
 
     setItems(filtered);
+    if (errors.length > 0) setError(errors.join(' / '));
     setLoading(false);
     // slotMap 은 useTimeSlots refetch 시 안정화. dep 에 넣지 않음 (무한 루프 방지)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -228,5 +244,5 @@ export function useRequests(typeFilter?: string, statusFilter?: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotMap]);
 
-  return { items, loading, refetch: fetchAll };
+  return { items, loading, error, refetch: fetchAll };
 }

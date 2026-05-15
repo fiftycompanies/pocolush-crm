@@ -35,8 +35,8 @@ const TYPE_META: Record<string, { icon: typeof Flame; color: string; label: stri
   coupon: { icon: Ticket, color: '#8B5CF6', label: '쿠폰' },
 };
 
-// STATUS_META — confirmed + no_show 신규
-const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+// G2: STATUS_META — UnifiedStatus union 멤버 모두 강제 (silent miss 차단)
+const STATUS_META = {
   payment_pending: { label: '결제 필요', color: '#DC2626', bg: '#FEF2F2' },
   pending: { label: '대기', color: '#D97706', bg: '#FFFBEB' },
   confirmed: { label: '예약완료', color: '#059669', bg: '#ECFDF5' },
@@ -44,7 +44,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   completed: { label: '완료', color: '#059669', bg: '#ECFDF5' },
   no_show: { label: '노쇼', color: '#991B1B', bg: '#FEE2E2' },
   cancelled: { label: '취소', color: '#6B7280', bg: '#F3F4F6' },
-};
+} as const satisfies Record<UnifiedStatus, { label: string; color: string; bg: string }>;
 
 // SLA 시간 경과 배경 — 미처리 status 만 적용 (검수 D3 보강)
 const SLA_APPLICABLE: UnifiedStatus[] = ['payment_pending', 'pending', 'confirmed'];
@@ -112,7 +112,7 @@ export default function RequestsPage() {
     setStatusFilter(searchParams.get('status') || '');
   }, [searchParams]);
 
-  const { items, loading, refetch } = useRequests(typeFilter || undefined, statusFilter || undefined);
+  const { items, loading, error: fetchError, refetch } = useRequests(typeFilter || undefined, statusFilter || undefined);
 
   const updateURL = (type: string, status: string) => {
     const params = new URLSearchParams();
@@ -232,10 +232,10 @@ export default function RequestsPage() {
 
       {/* 상태 탭 + 검색 */}
       <div className="flex items-center gap-4">
-        <div className="flex gap-1 border-b border-border flex-1 overflow-x-auto">
+        <div className="flex gap-1 border-b border-border flex-1 overflow-x-auto snap-x snap-mandatory">
           {STATUS_TABS.map(t => (
             <button key={t.key} onClick={() => handleStatusChange(t.key)}
-              className={`shrink-0 px-3 py-2.5 text-sm font-medium relative ${
+              className={`shrink-0 snap-start px-3 py-2.5 text-sm font-medium relative ${
                 statusFilter === t.key ? 'text-primary' : 'text-text-tertiary hover:text-text-primary'
               }`}>
               {t.label}
@@ -249,6 +249,18 @@ export default function RequestsPage() {
             className="w-full pl-9 pr-3 h-9 border border-border rounded-lg text-xs focus:outline-none focus:border-primary" />
         </div>
       </div>
+
+      {/* G3: 에러 노출 (bbq-board 패턴) */}
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2" data-testid="requests-error">
+          <X className="size-4 text-red-600 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="text-sm flex-1">
+            <strong className="text-red-900">데이터 조회 실패</strong>
+            <p className="text-red-700 text-xs mt-1">{fetchError}</p>
+            <button onClick={() => refetch()} className="mt-2 text-xs text-primary hover:underline">다시 시도</button>
+          </div>
+        </div>
+      )}
 
       {/* 리스트 */}
       {loading ? (

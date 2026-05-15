@@ -37,7 +37,7 @@ export default function StatsCards() {
       </Link>
 
       {/* 미처리 관리 */}
-      <Link href="/dashboard/requests?status=pending" className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer">
+      <Link href="/dashboard/requests" className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer">
         <div className="flex items-start justify-between">
           <p className="text-xs font-medium text-muted-foreground">미처리 관리</p>
           <div className="size-8 rounded-lg bg-orange/10 flex items-center justify-center"><AlertCircle className="size-4 text-orange-500" /></div>

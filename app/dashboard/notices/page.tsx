@@ -102,7 +102,7 @@ export default function AdminNoticesPage() {
           toast.error('세션이 만료되었습니다. 페이지를 새로고침해주세요.');
         } else {
           // 정확한 원인 진단 위해 message 전체 노출 (10초)
-          toast.error(`고정 변경 실패: ${error.message || error.code || '알 수 없는 오류'}`, { duration: 10000 });
+          toast.error(`고정 변경 실패: ${error.message || error.code || '알 수 없는 오류'}`);
         }
         return;
       }

@@ -115,6 +115,18 @@ export function useBBQBoard(dateFrom: string, dateTo?: string) {
     }, 500);
   }, [fetchOnce]);
 
+  // D5: visibilitychange — sleep/wake 후 채널 재구독 + 즉시 갱신
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && mountedRef.current && !pausedRef.current) {
+        fetchOnce();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [fetchOnce]);
+
   useEffect(() => {
     mountedRef.current = true;
     fetchOnce();

@@ -161,7 +161,7 @@ export default function DeleteMemberModal({ isOpen, onClose, memberId, memberNam
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? '처리 중...' : '삭제 신청'}
             </button>
