@@ -63,7 +63,7 @@ export default function BoardKpiCard({ rows }: Props) {
           <div className="text-lg font-bold text-rose-900 tabular-nums">{kpi.noShow}</div>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2" data-testid="kpi-available">
-          <div className="text-[10px] font-medium text-blue-700 uppercase tracking-wider">예약가능</div>
+          <div className="text-[10px] font-medium text-blue-700 uppercase tracking-wider">가용</div>
           <div className="text-lg font-bold text-blue-900 tabular-nums">{kpi.available}</div>
         </div>
         <div className="bg-gray-100 border border-gray-300 rounded-xl px-3 py-2" data-testid="kpi-inactive">

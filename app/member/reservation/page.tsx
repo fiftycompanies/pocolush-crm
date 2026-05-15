@@ -170,7 +170,7 @@ export default function ReservationPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-text-primary">바베큐장 예약</h1>
+          <h1 className="text-lg font-bold text-text-primary">평상 예약</h1>
           <p className="text-xs text-text-secondary mt-0.5">
             {priceIsEvent ? (
               <>

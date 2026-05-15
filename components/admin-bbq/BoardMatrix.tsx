@@ -22,9 +22,25 @@ interface CellProps {
   row: BBQBoardRow;
   onClick: () => void;
   highlighted: boolean;
+  dimmed: boolean;          // E9: 검색 활성 + 비매칭 시 dim
 }
 
-const MatrixCell = memo(function MatrixCell({ row, onClick, highlighted }: CellProps) {
+// D3: row 의 핵심 필드 비교 — Realtime 갱신 시 변경된 cell 만 re-render
+function cellPropsEqual(prev: CellProps, next: CellProps): boolean {
+  if (prev.highlighted !== next.highlighted) return false;
+  if (prev.dimmed !== next.dimmed) return false;
+  const a = prev.row, b = next.row;
+  return (
+    a.reservation_id === b.reservation_id &&
+    a.status === b.status &&
+    a.member_name === b.member_name &&
+    a.party_size === b.party_size &&
+    a.is_event === b.is_event &&
+    a.facility_active === b.facility_active
+  );
+}
+
+const MatrixCell = memo(function MatrixCell({ row, onClick, highlighted, dimmed }: CellProps) {
   const hasReservation = !!row.reservation_id && !!row.status;
   const isInactiveButReserved = !row.facility_active && hasReservation;
   const isInactiveEmpty = !row.facility_active && !hasReservation;
@@ -45,7 +61,7 @@ const MatrixCell = memo(function MatrixCell({ row, onClick, highlighted }: CellP
     label = '노쇼';
   } else {
     cellClass = 'bg-white border-dashed border-gray-300 cursor-default';
-    label = '예약가능';
+    label = '가용';
   }
 
   const cursorPointer = hasReservation;
@@ -53,13 +69,16 @@ const MatrixCell = memo(function MatrixCell({ row, onClick, highlighted }: CellP
   return (
     <div
       role="gridcell"
-      aria-label={`BBQ ${row.bbq_number}번 ${row.slot_label} ${label}${row.member_name ? ' ' + row.member_name : ''}`}
+      aria-label={`#${row.bbq_number}번 ${row.slot_label} ${label}${row.member_name ? ' ' + row.member_name : ''}${row.party_size ? ' ' + row.party_size + '인' : ''}`}
       tabIndex={cursorPointer ? 0 : -1}
       onClick={cursorPointer ? onClick : undefined}
       onKeyDown={cursorPointer ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+      title={!hasReservation && row.facility_active ? '빈 슬롯 — 예약 생성은 Phase 2 예정' : undefined}
       className={`relative min-h-[64px] p-2 border rounded-lg transition-all ${cellClass} ${
         isInactiveButReserved ? 'ring-2 ring-yellow-500 ring-offset-1' : ''
-      } ${highlighted ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+      } ${highlighted ? 'ring-2 ring-primary ring-offset-1' : ''} ${
+        dimmed ? 'opacity-30' : ''
+      }`}
       data-testid={`board-cell-${row.bbq_number}-${row.slot_number}`}
       data-status={row.status ?? 'available'}
       data-inactive-with-rsv={isInactiveButReserved ? 'true' : undefined}
@@ -92,7 +111,7 @@ const MatrixCell = memo(function MatrixCell({ row, onClick, highlighted }: CellP
       )}
     </div>
   );
-});
+}, cellPropsEqual);
 
 export default function BoardMatrix({ rows, onCellClick, searchQuery }: Props) {
   // 행: bbq_number 그룹화 / 열: slot_number 정렬
@@ -172,12 +191,14 @@ export default function BoardMatrix({ rows, onCellClick, searchQuery }: Props) {
                 (row.member_name || '').toLowerCase().includes(q) ||
                 (row.member_phone || '').includes(q)
               );
+              const dimmed = q.length > 0 && !highlighted;
               return (
                 <MatrixCell
                   key={s.number}
                   row={row}
                   onClick={() => onCellClick(row)}
                   highlighted={highlighted}
+                  dimmed={dimmed}
                 />
               );
             })}

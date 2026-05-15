@@ -22,6 +22,9 @@ interface Props {
   onUpdated: () => void;
 }
 
+// 모듈 레벨 Set — 페이지 라이프타임 동안 같은 예약 audit 1회만
+const auditedSet: Set<string> = new Set();
+
 export default function ReservationSidePanel({ row, onClose, onUpdated }: Props) {
   const supabase = createClient();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -43,12 +46,32 @@ export default function ReservationSidePanel({ row, onClose, onUpdated }: Props)
     })();
   }, [row.reservation_id, supabase]);
 
-  // Focus trap + ESC + trigger 복귀
+  // E3: Focus trap + ESC + trigger 복귀
   useEffect(() => {
     previousFocus.current = document.activeElement;
     panelRef.current?.focus();
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusables = Array.from(
+          panelRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter(el => !el.hasAttribute('disabled'));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener('keydown', handleKey);
     return () => {
@@ -57,16 +80,17 @@ export default function ReservationSidePanel({ row, onClose, onUpdated }: Props)
     };
   }, [onClose]);
 
-  // PIPA audit — 회원 phone 조회 시점
+  // D4: PIPA audit — 같은 reservation_id 재오픈 시 중복 호출 방지 (1년 ~60K row 폭증 차단)
   useEffect(() => {
-    if (row.reservation_id && row.member_phone) {
-      auditLog({
-        action: 'view_bbq_reservation_detail',
-        resource_type: 'bbq_reservation',
-        resource_id: row.reservation_id,
-        metadata: { bbq_number: row.bbq_number, slot: row.slot_number, date: row.reservation_date },
-      }).catch(e => console.error('[ReservationSidePanel] audit failed', e));
-    }
+    if (!row.reservation_id || !row.member_phone) return;
+    if (auditedSet.has(row.reservation_id)) return;
+    auditedSet.add(row.reservation_id);
+    auditLog({
+      action: 'view_bbq_reservation_detail',
+      resource_type: 'bbq_reservation',
+      resource_id: row.reservation_id,
+      metadata: { bbq_number: row.bbq_number, slot: row.slot_number, date: row.reservation_date },
+    }).catch(e => console.error('[ReservationSidePanel] audit failed', e));
   }, [row.reservation_id, row.member_phone, row.bbq_number, row.slot_number, row.reservation_date]);
 
   const updateStatus = async (newStatus: 'completed' | 'no_show' | 'cancelled') => {
@@ -230,7 +254,7 @@ export default function ReservationSidePanel({ row, onClose, onUpdated }: Props)
                   onClick={() => updateStatus('cancelled')}
                   disabled={busy}
                   data-testid="panel-action-cancel"
-                  className="h-10 rounded-xl bg-gray-200 text-gray-800 text-sm font-semibold hover:bg-gray-300 disabled:opacity-40"
+                  className="h-10 rounded-xl border-2 border-rose-300 text-rose-700 bg-white text-sm font-semibold hover:bg-rose-50 disabled:opacity-40"
                 >
                   취소
                 </button>

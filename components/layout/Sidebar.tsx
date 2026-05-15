@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid, Settings2, Package } from 'lucide-react';
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -20,23 +20,13 @@ const memberNav = [
   { href: '/dashboard/members', label: '회원 관리', icon: UserCheck },
   { href: '/dashboard/memberships', label: '회원권 관리', icon: Award },
   { href: '/dashboard/requests', label: '신청 관리', icon: ClipboardList },
-  { href: '/dashboard/bbq-board', label: 'BBQ 예약 현황', icon: LayoutGrid },
-  { href: '/dashboard/bbq', label: 'BBQ 시설·타임 설정', icon: Flame },
-  { href: '/dashboard/bbq-products', label: 'BBQ 상품·이벤트', icon: Flame },
+  { href: '/dashboard/bbq-board', label: '평상 예약 현황', icon: LayoutGrid },
+  { href: '/dashboard/bbq', label: '평상 시설·운영시간', icon: Settings2 },
+  { href: '/dashboard/bbq-products', label: '평상 메뉴·이벤트', icon: Package },
   { href: '/dashboard/store', label: '스토어 설정', icon: ShoppingBag },
   { href: '/dashboard/plans', label: '플랜 관리', icon: CreditCard },
   { href: '/dashboard/coupons', label: '쿠폰 설정', icon: Ticket },
   { href: '/dashboard/notices', label: '공지 관리', icon: Megaphone },
-];
-
-// 모든 nav href (active 매칭 시 prefix 충돌 검사용)
-const ALL_NAV_HREFS: string[] = [
-  '/dashboard', '/dashboard/inquiries', '/dashboard/farms', '/dashboard/rentals',
-  '/dashboard/members', '/dashboard/memberships', '/dashboard/requests',
-  '/dashboard/bbq-board', '/dashboard/bbq', '/dashboard/bbq-products',
-  '/dashboard/store', '/dashboard/plans', '/dashboard/coupons', '/dashboard/notices',
-  '/dashboard/blog',
-  '/dashboard/warning', '/dashboard/audit-logs', '/dashboard/notifications', '/dashboard/settings',
 ];
 
 const contentNav = [
@@ -49,11 +39,20 @@ const bottomNavBase = [
   { href: '/dashboard/settings', label: '설정', icon: Settings },
 ];
 
+const warningNav = [
+  { href: '/dashboard/warning', label: '경고', icon: AlertTriangle },
+];
+
+// G1: ALL_NAV_HREFS 자동 생성 — 새 메뉴 추가 시 단일 소스 (mainNav 등) 만 갱신
+const ALL_NAV_HREFS: string[] = [
+  ...mainNav, ...memberNav, ...contentNav, ...bottomNavBase, ...warningNav,
+].map(i => i.href);
+
 export default function Sidebar({ isAdmin = false, unackedWarnings = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   const bottomNav = isAdmin
-    ? [{ href: '/dashboard/warning', label: '경고', icon: AlertTriangle }, ...bottomNavBase]
+    ? [...warningNav, ...bottomNavBase]
     : bottomNavBase;
 
   const renderItem = (item: typeof mainNav[0]) => {

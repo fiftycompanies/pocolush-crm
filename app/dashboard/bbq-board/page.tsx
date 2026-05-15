@@ -64,15 +64,15 @@ function BoardClient() {
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">BBQ 예약 현황</h1>
-          <p className="text-sm text-text-secondary mt-1">실시간 자동 갱신 — 운영 중인 시설 + 예약 보유 시설</p>
+          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">평상 예약 현황</h1>
+          <p className="text-sm text-text-secondary mt-1">오늘·내일·이번 주 예약을 실시간 확인합니다. 운영 중단된 시설이라도 예약이 남아 있으면 표시됩니다.</p>
         </div>
         <div className="flex items-center gap-2">
           {lastFetched && (
             <span className={`text-[11px] ${isStale ? 'text-amber-700 font-semibold' : 'text-text-tertiary'}`} data-testid="last-fetched">
               {isStale && '⚠ '}
-              {Math.floor(staleSeconds)}초 전 갱신
-              {isRealtimeOk && <span className="ml-1 text-emerald-600">● realtime</span>}
+              {Math.floor(staleSeconds)}초 전 자동 갱신
+              {isRealtimeOk && <span className="ml-1 text-emerald-600" title="실시간 연결 정상">● 실시간 연결됨</span>}
             </span>
           )}
           <button

@@ -103,6 +103,14 @@ export default function BoardWeekTape({ rows, onCellClick }: Props) {
                     const color = dotColor(row);
                     const hasRsv = !!row?.reservation_id;
                     const isInactiveWithRsv = row && !row.facility_active && hasRsv;
+                    const statusKo = row?.status === 'confirmed' ? '예약완료'
+                      : row?.status === 'completed' ? '완료'
+                      : row?.status === 'no_show' ? '노쇼'
+                      : (row && !row.facility_active) ? '비운영'
+                      : '가용';
+                    const ariaLabelText = `#${f.number}번 ${slot}타임 ${statusKo}`
+                      + (row?.member_name ? ` ${row.member_name}` : '')
+                      + (row?.party_size ? ` ${row.party_size}인` : '');
                     return (
                       <button
                         key={slot}
@@ -114,8 +122,8 @@ export default function BoardWeekTape({ rows, onCellClick }: Props) {
                           backgroundColor: color,
                           border: isInactiveWithRsv ? '2px solid #EAB308' : '1px solid rgba(0,0,0,0.1)',
                         }}
-                        title={`${slot}타임 ${row?.status ?? '가용'}${row?.member_name ? ' · ' + row.member_name : ''}`}
-                        aria-label={`${f.number}번 ${slot}타임`}
+                        title={ariaLabelText}
+                        aria-label={ariaLabelText}
                       />
                     );
                   })}

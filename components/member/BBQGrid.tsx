@@ -27,7 +27,7 @@ export default function BBQGrid({ facilities, bookedFacilities, selectedBBQ, onS
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-text-primary mb-3">바베큐장 선택</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-3">평상 선택</h3>
       <div className="grid grid-cols-3 gap-2">
         {facilities.filter(f => f.is_active).map((facility) => {
           const status = getStatus(facility.number);
