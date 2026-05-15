@@ -138,8 +138,8 @@ test('8. 사이드바 — "평상" 워딩 변경 검증', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   await expect(page.getByRole('link', { name: '평상 예약 현황' })).toBeVisible();
-  await expect(page.getByRole('link', { name: '평상 시설·운영시간' })).toBeVisible();
-  await expect(page.getByRole('link', { name: '평상 메뉴·이벤트' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '평상 설정' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '평상 메뉴' }).first()).toBeVisible();
 
   await page.screenshot({ path: '/tmp/qa-v2-sidebar.png', fullPage: true });
 });
