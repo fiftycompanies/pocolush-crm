@@ -7,6 +7,15 @@ import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, User
 interface SidebarProps {
   isAdmin?: boolean;
   unackedWarnings?: number;
+  /**
+   * U2: 모바일 V2 모드 활성 여부. true 면 `mobileOpen` 기반으로 translate 토글.
+   * false (기본) 면 기존 데스크탑 고정 사이드바 동작 유지.
+   */
+  mobileEnabled?: boolean;
+  /** mobileEnabled=true 일 때만 의미. 모바일 열림 상태 */
+  mobileOpen?: boolean;
+  /** Link 클릭 시 호출 (모바일 자동 닫기) */
+  onLinkClick?: () => void;
 }
 
 const mainNav = [
@@ -48,7 +57,13 @@ const ALL_NAV_HREFS: string[] = [
   ...mainNav, ...memberNav, ...contentNav, ...bottomNavBase, ...warningNav,
 ].map(i => i.href);
 
-export default function Sidebar({ isAdmin = false, unackedWarnings = 0 }: SidebarProps) {
+export default function Sidebar({
+  isAdmin = false,
+  unackedWarnings = 0,
+  mobileEnabled = false,
+  mobileOpen = false,
+  onLinkClick,
+}: SidebarProps) {
   const pathname = usePathname();
 
   const bottomNav = isAdmin
@@ -79,6 +94,7 @@ export default function Sidebar({ isAdmin = false, unackedWarnings = 0 }: Sideba
       <Link
         key={item.href}
         href={item.href}
+        onClick={onLinkClick}
         className={`flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium transition-all ${
           isActive
             ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
@@ -96,9 +112,17 @@ export default function Sidebar({ isAdmin = false, unackedWarnings = 0 }: Sideba
     );
   };
 
+  // U2 모바일 V2: enabled 일 때만 transform 토글, off 면 기존 고정 동작
+  const transformCls = mobileEnabled
+    ? `transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`
+    : '';
+
   return (
     <aside
-      className="fixed left-0 top-0 h-full bg-sidebar border-r border-sidebar-border flex flex-col z-30"
+      id="dashboard-sidebar"
+      role="navigation"
+      aria-label="주 메뉴"
+      className={`fixed left-0 top-0 h-full bg-sidebar border-r border-sidebar-border flex flex-col z-30 ${transformCls}`}
       style={{ width: '16rem' }}
     >
       {/* Logo */}
