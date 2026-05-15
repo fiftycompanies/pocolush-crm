@@ -188,7 +188,7 @@ export default function BBQSettingsPage() {
     <div className="space-y-6" style={{ maxWidth: '1200px' }}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">바베큐장 설정</h1>
+          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">평상 설정</h1>
           <p className="text-sm text-text-secondary mt-1">전체 {facilities.length}개 · 활성 {activeCount}개</p>
         </div>
         <button onClick={openNew} className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-dark">
