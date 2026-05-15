@@ -13,7 +13,7 @@ import ServiceOrderDrawer from '@/components/admin-store/ServiceOrderDrawer';
 const TYPE_TABS = [
   { key: '', label: '전체' },
   { key: 'bbq', label: 'BBQ', icon: Flame, color: '#DC2626' },
-  { key: 'order', label: '스토어', icon: ShoppingBag, color: '#0EA5E9' }, // Q12: orange → sky
+  { key: 'order', label: '스토어', icon: ShoppingBag, color: '#D97706' }, // Q3: amber 복구 (대시보드/회원 통일)
   { key: 'coupon', label: '쿠폰', icon: Ticket, color: '#8B5CF6' },
 ] as const;
 
@@ -31,7 +31,7 @@ const STATUS_TABS = [
 
 const TYPE_META: Record<string, { icon: typeof Flame; color: string; label: string }> = {
   bbq: { icon: Flame, color: '#DC2626', label: 'BBQ' },
-  order: { icon: ShoppingBag, color: '#0EA5E9', label: '스토어' }, // Q12: sky
+  order: { icon: ShoppingBag, color: '#D97706', label: '스토어' }, // Q3: amber 복구
   coupon: { icon: Ticket, color: '#8B5CF6', label: '쿠폰' },
 };
 
