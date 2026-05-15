@@ -65,6 +65,10 @@ export default function RentalDetailPage() {
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === 'active' && !rental?.farm_id) {
+      toast.error('농장이 할당되지 않은 계약은 임대중으로 변경할 수 없습니다. 먼저 농장을 할당해주세요.');
+      return;
+    }
     await supabase.from('farm_rentals').update({ status: newStatus }).eq('id', id);
     toast.success('계약 상태가 변경되었습니다');
     fetchData();
@@ -84,7 +88,7 @@ export default function RentalDetailPage() {
 
   const handleAssignFarm = async (farmId: string) => {
     if (!farmId) return;
-    const { error } = await supabase.from('farm_rentals').update({ farm_id: farmId }).eq('id', id);
+    const { error } = await supabase.from('farm_rentals').update({ farm_id: farmId, status: 'active' }).eq('id', id);
     if (error) { toast.error('농장 할당 실패: ' + error.message); return; }
     toast.success('농장이 할당되었습니다. (납부완료면 회원권이 자동 발급됩니다)');
     fetchData();
@@ -277,6 +281,7 @@ export default function RentalDetailPage() {
             <Select
               label="계약 상태"
               options={[
+                { value: 'pending', label: '대기' },
                 { value: 'active', label: '임대중' },
                 { value: 'expired', label: '만료' },
                 { value: 'cancelled', label: '취소' },

@@ -125,8 +125,9 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
       memberId = memRow?.id ?? null;
     }
 
+    const farmId = form.farm_id || null;
     const { error } = await supabase.from('farm_rentals').insert({
-      farm_id: form.farm_id || null,
+      farm_id: farmId,
       customer_id: customerId,
       member_id: memberId,
       start_date: form.start_date,
@@ -135,6 +136,7 @@ export default function RentalForm({ preselectedFarmId, preselectedCustomerId }:
       monthly_fee: parseInt(form.monthly_fee),
       payment_method: form.payment_method,
       payment_status: form.payment_status,
+      status: farmId ? 'active' : 'pending',
       notes: form.notes || null,
     });
 

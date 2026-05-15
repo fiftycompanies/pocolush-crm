@@ -47,6 +47,7 @@ export const EXPIRY_WARNING_DAYS = 30;
 export const EXPIRY_DANGER_DAYS = 7;
 
 export const RENTAL_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  pending:   { label: '대기',   color: '#D97706', bg: '#FFFBEB' },
   active:    { label: '임대중', color: '#059669', bg: '#ECFDF5' },
   expired:   { label: '만료',   color: '#DC2626', bg: '#FEF2F2' },
   cancelled: { label: '취소',   color: '#6B7280', bg: '#F3F4F6' },
