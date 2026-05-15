@@ -11,7 +11,8 @@ import {
 
 // U2-IA: feature flag — 미설정 시 기존 단일 그룹(legacy) 동작 유지
 // Vercel env `NEXT_PUBLIC_SIDEBAR_IA_V2=1` 일 때 6그룹 V2 활성
-const IA_V2 = process.env.NEXT_PUBLIC_SIDEBAR_IA_V2 === '1';
+// trim() — vercel env add 가 stdin 줄바꿈 보존 시("1\n") 방어
+const IA_V2 = process.env.NEXT_PUBLIC_SIDEBAR_IA_V2?.trim() === '1';
 
 interface SidebarProps {
   isAdmin?: boolean;
