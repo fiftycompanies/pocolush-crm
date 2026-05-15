@@ -12,7 +12,7 @@ import ServiceOrderDrawer from '@/components/admin-store/ServiceOrderDrawer';
 
 const TYPE_TABS = [
   { key: '', label: '전체' },
-  { key: 'bbq', label: 'BBQ', icon: Flame, color: '#DC2626' },
+  { key: 'bbq', label: '평상', icon: Flame, color: '#DC2626' },
   { key: 'order', label: '스토어', icon: ShoppingBag, color: '#D97706' }, // Q3: amber 복구 (대시보드/회원 통일)
   { key: 'coupon', label: '쿠폰', icon: Ticket, color: '#8B5CF6' },
 ] as const;
@@ -30,7 +30,7 @@ const STATUS_TABS = [
 ] as const;
 
 const TYPE_META: Record<string, { icon: typeof Flame; color: string; label: string }> = {
-  bbq: { icon: Flame, color: '#DC2626', label: 'BBQ' },
+  bbq: { icon: Flame, color: '#DC2626', label: '평상' },
   order: { icon: ShoppingBag, color: '#D97706', label: '스토어' }, // Q3: amber 복구
   coupon: { icon: Ticket, color: '#8B5CF6', label: '쿠폰' },
 };
@@ -206,7 +206,7 @@ export default function RequestsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold text-text-primary tracking-tight">신청 관리</h1>
-          <p className="text-sm text-text-secondary mt-1">BBQ · 스토어 · 쿠폰 신청을 통합 관리합니다</p>
+          <p className="text-sm text-text-secondary mt-1">평상 · 스토어 · 쿠폰 신청을 통합 관리합니다</p>
         </div>
       </div>
 
