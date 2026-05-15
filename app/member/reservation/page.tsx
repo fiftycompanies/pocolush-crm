@@ -38,7 +38,7 @@ export default function ReservationPage() {
       }
       const { data: f } = await supabase.from('bbq_facilities').select('*').order('number');
       setFacilities(f || []);
-      // R2: 활성 바베큐 상품 (is_active 가장 최근)
+      // R2: 활성 평상 상품 (is_active 가장 최근)
       const { data: p } = await supabase
         .from('bbq_products')
         .select('id, name, base_price, duration_minutes')

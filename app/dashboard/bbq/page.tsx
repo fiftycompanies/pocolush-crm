@@ -40,7 +40,7 @@ export default function BBQSettingsPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: `바베큐장 ${nextNumber}`, price: '30000', notes: '' });
+    setForm({ name: `평상 ${nextNumber}`, price: '30000', notes: '' });
     setShowForm(true);
     setShowSlotForm(false);
   };
@@ -217,7 +217,7 @@ export default function BBQSettingsPage() {
       {/* 배치도 */}
       <div className="bg-card border rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">바베큐장 배치도</h3>
+          <h3 className="text-sm font-semibold">평상 배치도</h3>
           <span className="text-xs text-muted-foreground">{activeCount}개 운영중</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">

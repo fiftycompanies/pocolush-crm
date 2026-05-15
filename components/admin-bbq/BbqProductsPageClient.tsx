@@ -92,7 +92,7 @@ export default function BbqProductsPageClient() {
     <div className="space-y-5" style={{ maxWidth: '1100px' }}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">바베큐 상품 관리</h1>
+          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">평상 메뉴 관리</h1>
           <p className="text-sm text-text-secondary mt-1">총 {products.length}개 상품 · {events.length}개 이벤트</p>
         </div>
         <button

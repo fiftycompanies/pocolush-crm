@@ -81,7 +81,7 @@ export default function BbqProductModal({ mode, product, onClose, onSuccess }: P
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="예: 바베큐장 예약 (4인 기준)"
+              placeholder="예: 평상 예약 (4인 기준)"
               className="w-full h-10 px-3 border border-border rounded-lg"
             />
           </div>
