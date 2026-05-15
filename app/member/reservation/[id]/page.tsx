@@ -69,7 +69,7 @@ export default function ReservationDetailPage({ params }: { params: Promise<{ id
 
       <div className="bg-white border border-border rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-text-primary">바베큐장 {reservation.bbq_number}번</span>
+          <span className="text-lg font-bold text-text-primary">{reservation.bbq_number}번 평상</span>
           <span className="text-[11px] font-medium px-2.5 py-1 rounded-full"
             style={{ color: status?.color, backgroundColor: status?.bg }}>
             {status?.label}

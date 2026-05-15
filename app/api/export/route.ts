@@ -446,10 +446,10 @@ const CONFIGS: Record<string, ExportConfig> = {
     },
   },
 
-  // ─── 9. 바베큐 예약 ───
+  // ─── 9. 평상 예약 ───
   bbq: {
-    sheetName: '바베큐예약',
-    filename: '포코러쉬_바베큐예약',
+    sheetName: '평상예약',
+    filename: '포코러쉬_평상예약',
     dateField: 'reservation_date',
     columns: [
       { header: '예약일', key: 'reservation_date', width: 14 },

@@ -209,7 +209,7 @@ export default function ReservationPage() {
         </div>
       )}
 
-      {/* Step 3: 바베큐장 */}
+      {/* Step 3: 평상 */}
       {selectedDate && selectedSlot !== null && (
         <div className="bg-white border border-border rounded-2xl p-4">
           <BBQGrid
@@ -239,7 +239,7 @@ export default function ReservationPage() {
             <div className="space-y-2 text-sm mb-6">
               <div className="flex justify-between"><span className="text-text-secondary">날짜</span><span className="font-medium">{selectedDate.replace(/-/g, '.')}</span></div>
               <div className="flex justify-between"><span className="text-text-secondary">시간</span><span className="font-medium">{selectedSlotInfo?.label} {selectedSlotInfo?.time}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">장소</span><span className="font-medium">바베큐장 {selectedBBQ}번</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">장소</span><span className="font-medium">{selectedBBQ}번 평상</span></div>
               <div className="flex justify-between"><span className="text-text-secondary">가격</span>
                 <span className="font-medium">
                   {price === 0 ? '무료' : `${price.toLocaleString()}원`}

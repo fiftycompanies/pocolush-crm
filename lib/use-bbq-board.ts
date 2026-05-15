@@ -24,8 +24,9 @@ export const dateOffsetKST = (days: number): string => {
 };
 
 // 보드 영향 컬럼 (Realtime watch 필터링 — D1)
+// 검수 결과: party_size 도 셀에 표시되므로 watch keys 포함
 const BBQ_WATCH_KEYS = [
-  'status', 'reservation_date', 'bbq_number', 'time_slot', 'member_id',
+  'status', 'reservation_date', 'bbq_number', 'time_slot', 'member_id', 'party_size',
 ] as const;
 
 /**

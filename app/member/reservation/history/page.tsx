@@ -53,7 +53,7 @@ export default function ReservationHistoryPage() {
                 className="block bg-white border border-border rounded-2xl p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-text-primary">바베큐장 {r.bbq_number}번</p>
+                    <p className="text-sm font-medium text-text-primary">{r.bbq_number}번 평상</p>
                     <p className="text-[12px] text-text-secondary mt-0.5">
                       {r.reservation_date.replace(/-/g, '.')} · {getSlotLabel(r.time_slot)} {getSlotTime(r.time_slot)}
                     </p>

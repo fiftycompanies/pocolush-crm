@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid, Settings2, Package } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid, Settings2, Package } from 'lucide-react';
 
 interface SidebarProps {
   isAdmin?: boolean;
