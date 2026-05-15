@@ -139,9 +139,34 @@ test('8. 사이드바 — "평상" 워딩 변경 검증', async ({ page }) => {
 
   await expect(page.getByRole('link', { name: '평상 예약 현황' })).toBeVisible();
   await expect(page.getByRole('link', { name: '평상 설정' })).toBeVisible();
-  await expect(page.getByRole('link', { name: '평상 메뉴' }).first()).toBeVisible();
+  // 평상 메뉴(bbq-products) 는 평상 설정 §3 섹션으로 통합 (2026-05-16) — 사이드바에서 제거
+  await expect(page.getByRole('link', { name: '평상 메뉴' })).toHaveCount(0);
 
   await page.screenshot({ path: '/tmp/qa-v2-sidebar.png', fullPage: true });
+});
+
+test('9. 평상 설정 통합 — §1~§4 4섹션 visible', async ({ page }) => {
+  await adminLogin(page);
+  await page.goto(`${BASE}/dashboard/bbq`);
+  await page.waitForLoadState('networkidle');
+
+  // §1 배치도 / §2 타임슬롯 / §3 상품·이벤트 / §4 시설 목록 (collapsible)
+  await expect(page.getByRole('heading', { name: '평상 배치도' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '타임 슬롯' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '상품·이벤트' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /시설 목록/ })).toBeVisible();
+
+  // §3 상품 1건 표시
+  await expect(page.getByText('평상 예약 (기본)')).toBeVisible();
+  await page.screenshot({ path: '/tmp/qa-bbq-integrated.png', fullPage: true });
+});
+
+test('10. /dashboard/bbq-products → /dashboard/bbq#products redirect', async ({ page }) => {
+  await adminLogin(page);
+  await page.goto(`${BASE}/dashboard/bbq-products`);
+  await page.waitForURL(/\/dashboard\/bbq(\?|#|$)/, { timeout: 10000 });
+  // redirect 도착 후 §3 섹션 visible
+  await expect(page.getByRole('heading', { name: '상품·이벤트' })).toBeVisible();
 });
 
 test('7. StatsCards BBQ 칩 confirmed 링크 (P0 fix)', async ({ page }) => {

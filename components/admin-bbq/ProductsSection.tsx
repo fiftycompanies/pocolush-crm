@@ -26,13 +26,28 @@ export interface BbqEvent {
   end_date: string;
 }
 
-export default function BbqProductsPageClient() {
+interface Props {
+  /** 외부 노출: products/events count */
+  onChange?: (data: { products: number; events: number }) => void;
+}
+
+/**
+ * §3 상품·이벤트 섹션 (이전 BbqProductsPageClient.tsx 재구성)
+ * - 상품 카드 + 이벤트 sub-list
+ * - BbqProductModal + BbqEventModal 재활용
+ * - id="products" — /dashboard/bbq-products redirect 해시 타깃
+ */
+export default function ProductsSection({ onChange }: Props) {
   const supabase = createClient();
   const [products, setProducts] = useState<BbqProduct[]>([]);
   const [events, setEvents] = useState<BbqEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [productModal, setProductModal] = useState<{ mode: 'new' | 'edit'; product?: BbqProduct } | null>(null);
-  const [eventModal, setEventModal] = useState<{ productId: string; event?: BbqEvent } | null>(null);
+  const [productModal, setProductModal] = useState<
+    { mode: 'new' | 'edit'; product?: BbqProduct } | null
+  >(null);
+  const [eventModal, setEventModal] = useState<
+    { productId: string; event?: BbqEvent } | null
+  >(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -40,18 +55,32 @@ export default function BbqProductsPageClient() {
       supabase.from('bbq_products').select('*').order('created_at'),
       supabase.from('bbq_events').select('*').order('start_date', { ascending: false }),
     ]);
-    setProducts((pRes.data as BbqProduct[]) || []);
-    setEvents((eRes.data as BbqEvent[]) || []);
+    const pList = (pRes.data as BbqProduct[]) || [];
+    const eList = (eRes.data as BbqEvent[]) || [];
+    setProducts(pList);
+    setEvents(eList);
     setLoading(false);
+    onChange?.({ products: pList.length, events: eList.length });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const handleDeleteProduct = async (product: BbqProduct) => {
-    if (!confirm(`"${product.name}" 상품을 삭제하시겠습니까? (연결된 이벤트도 함께 삭제됩니다)`)) return;
-    const { error } = await supabase.from('bbq_products').delete().eq('id', product.id);
+    if (
+      !confirm(
+        `"${product.name}" 상품을 삭제하시겠습니까? (연결된 이벤트도 함께 삭제됩니다)`,
+      )
+    )
+      return;
+    const { error } = await supabase
+      .from('bbq_products')
+      .delete()
+      .eq('id', product.id);
     if (error) {
       toast.error('삭제 실패: ' + error.message);
       return;
@@ -84,44 +113,57 @@ export default function BbqProductsPageClient() {
   };
 
   const eventsForProduct = (productId: string) =>
-    events.filter(e => e.product_id === productId);
+    events.filter((e) => e.product_id === productId);
 
-  const isEventActive = (ev: BbqEvent) => ev.start_date <= todayStr && ev.end_date >= todayStr;
+  const isEventActive = (ev: BbqEvent) =>
+    ev.start_date <= todayStr && ev.end_date >= todayStr;
 
   return (
-    <div className="space-y-5" style={{ maxWidth: '1100px' }}>
+    <section
+      id="products"
+      className="bg-card border rounded-xl p-6 space-y-4 scroll-mt-16"
+    >
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">평상 메뉴 관리</h1>
-          <p className="text-sm text-text-secondary mt-1">총 {products.length}개 상품 · {events.length}개 이벤트</p>
+          <h3 className="text-sm font-semibold">상품·이벤트</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            상품 {products.length}개 · 이벤트 {events.length}개
+          </p>
         </div>
         <button
           onClick={() => setProductModal({ mode: 'new' })}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary-dark"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary-dark"
         >
-          <Plus className="size-4" /> 신규 상품
+          <Plus className="size-3.5" /> 신규 상품
         </button>
       </div>
 
       {loading ? (
-        <p className="text-center text-sm text-text-secondary py-10">불러오는 중...</p>
+        <p className="text-center text-sm text-text-secondary py-6">불러오는 중...</p>
       ) : products.length === 0 ? (
-        <p className="text-center text-sm text-text-tertiary py-10">등록된 상품이 없습니다.</p>
+        <p className="text-center text-sm text-text-tertiary py-6">
+          등록된 상품이 없습니다.
+        </p>
       ) : (
-        <div className="space-y-4">
-          {products.map(p => {
+        <div className="space-y-3">
+          {products.map((p) => {
             const evs = eventsForProduct(p.id);
             const active = evs.find(isEventActive);
             return (
-              <div key={p.id} className="bg-card border rounded-xl overflow-hidden">
+              <div key={p.id} className="bg-background border rounded-xl overflow-hidden">
                 <div className="p-4 flex items-center justify-between border-b border-border">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold">{p.name}</h3>
-                      {!p.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">비활성</span>}
+                      <h4 className="text-sm font-semibold">{p.name}</h4>
+                      {!p.is_active && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                          비활성
+                        </span>
+                      )}
                       {active && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
-                          🎉 {active.event_name} 진행중 ({active.event_price.toLocaleString()}원)
+                          🎉 {active.event_name} 진행중 (
+                          {active.event_price.toLocaleString()}원)
                         </span>
                       )}
                     </div>
@@ -154,12 +196,17 @@ export default function BbqProductsPageClient() {
                 </div>
                 {evs.length > 0 && (
                   <ul className="divide-y divide-border text-sm">
-                    {evs.map(ev => (
-                      <li key={ev.id} className="px-4 py-2.5 flex items-center justify-between text-xs">
+                    {evs.map((ev) => (
+                      <li
+                        key={ev.id}
+                        className="px-4 py-2.5 flex items-center justify-between text-xs"
+                      >
                         <div className="flex items-center gap-2 flex-1">
                           <span className="font-medium">{ev.event_name}</span>
                           <span className="font-mono text-emerald-700">
-                            {ev.event_price === 0 ? '무료' : `${ev.event_price.toLocaleString()}원`}
+                            {ev.event_price === 0
+                              ? '무료'
+                              : `${ev.event_price.toLocaleString()}원`}
                           </span>
                           <span className="text-text-tertiary">
                             {ev.start_date} ~ {ev.end_date}
@@ -199,7 +246,10 @@ export default function BbqProductsPageClient() {
           mode={productModal.mode}
           product={productModal.product}
           onClose={() => setProductModal(null)}
-          onSuccess={() => { setProductModal(null); fetch(); }}
+          onSuccess={() => {
+            setProductModal(null);
+            fetch();
+          }}
         />
       )}
 
@@ -208,9 +258,12 @@ export default function BbqProductsPageClient() {
           productId={eventModal.productId}
           event={eventModal.event}
           onClose={() => setEventModal(null)}
-          onSuccess={() => { setEventModal(null); fetch(); }}
+          onSuccess={() => {
+            setEventModal(null);
+            fetch();
+          }}
         />
       )}
-    </div>
+    </section>
   );
 }

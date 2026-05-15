@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { auditLog } from '@/lib/audit-log';
-import type { BbqEvent } from './BbqProductsPageClient';
+import type { BbqEvent } from './ProductsSection';
 
 interface Props {
   productId: string;

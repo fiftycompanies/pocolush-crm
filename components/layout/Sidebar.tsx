@@ -6,7 +6,7 @@ import {
   LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings,
   UserCheck, ShoppingBag, Ticket, Megaphone, Bell, CreditCard,
   ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid,
-  Settings2, Package,
+  Settings2,
 } from 'lucide-react';
 
 // U2-IA: feature flag — 미설정 시 기존 단일 그룹(legacy) 동작 유지
@@ -51,7 +51,7 @@ const legacyMemberNav: NavItem[] = [
   { href: '/dashboard/requests', label: '신청 관리', icon: ClipboardList },
   { href: '/dashboard/bbq-board', label: '평상 예약 현황', icon: LayoutGrid },
   { href: '/dashboard/bbq', label: '평상 설정', icon: Settings2 },
-  { href: '/dashboard/bbq-products', label: '평상 메뉴', icon: Package },
+  // 평상 메뉴 (bbq-products) 는 2026-05-16 평상 설정 §3 섹션으로 통합 (redirect 유지)
   { href: '/dashboard/store', label: '스토어 설정', icon: ShoppingBag },
   { href: '/dashboard/plans', label: '플랜 관리', icon: CreditCard },
   { href: '/dashboard/coupons', label: '쿠폰 설정', icon: Ticket },
@@ -81,8 +81,8 @@ const memberNav: NavItem[] = [
 const assetNav: NavItem[] = [
   { href: '/dashboard/farms', label: '농장 관리', icon: Map },
   { href: '/dashboard/rentals', label: '임대 계약', icon: FileText },
+  // 평상 메뉴(bbq-products) 는 평상 설정 §3 섹션으로 통합 (2026-05-16)
   { href: '/dashboard/bbq', label: '평상 설정', icon: Settings2 },
-  { href: '/dashboard/bbq-products', label: '평상 메뉴', icon: Package },
 ];
 
 const commerceNav: NavItem[] = [
