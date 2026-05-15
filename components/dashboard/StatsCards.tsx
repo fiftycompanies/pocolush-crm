@@ -44,7 +44,7 @@ export default function StatsCards() {
         </div>
         <p className="text-2xl font-bold tracking-tight mt-2">{s.pendingTotal}<span className="text-sm font-normal text-muted-foreground ml-1">건</span></p>
         <div className="flex gap-2 mt-1 text-[11px]">
-          {s.pendingBBQ > 0 && <Link href="/dashboard/requests?type=bbq&status=pending" className="text-red-600 hover:underline">BBQ {s.pendingBBQ}</Link>}
+          {s.pendingBBQ > 0 && <Link href="/dashboard/requests?type=bbq&status=confirmed" className="text-red-600 hover:underline">BBQ {s.pendingBBQ}</Link>}
           {s.pendingOrders > 0 && <Link href="/dashboard/requests?type=order&status=pending" className="text-amber-600 hover:underline">스토어 {s.pendingOrders}</Link>}
           {s.pendingCoupons > 0 && <Link href="/dashboard/requests?type=coupon&status=pending" className="text-violet-600 hover:underline">쿠폰 {s.pendingCoupons}</Link>}
           {s.pendingTotal === 0 && <span className="text-muted-foreground">처리 완료</span>}
