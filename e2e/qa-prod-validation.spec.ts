@@ -56,12 +56,13 @@ test('1. 공지 고정 토글 hotfix 검증 — 토스트/콘솔 캡쳐', async 
   expect(['success', 'error']).toContain(outcome);
 });
 
-test('2. BBQ 보드 — KPI + 매트릭스', async ({ page }) => {
+test('2. BBQ 보드 — KPI + 매트릭스 + 평상 워딩', async ({ page }) => {
   await adminLogin(page);
   await page.goto(`${BASE}/dashboard/bbq-board`);
   await page.waitForLoadState('networkidle');
 
-  await expect(page.getByRole('heading', { name: 'BBQ 예약 현황' })).toBeVisible();
+  // 워딩 변경 검증 — "평상 예약 현황"
+  await expect(page.getByRole('heading', { name: '평상 예약 현황' })).toBeVisible();
   await expect(page.locator('[data-testid="board-kpi-card"]')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('[data-testid="kpi-confirmed"]')).toBeVisible();
   await expect(page.locator('[data-testid="kpi-noshow"]')).toBeVisible();
@@ -129,6 +130,18 @@ test('6. STATUS 탭 예약완료/노쇼 노출', async ({ page }) => {
   await expect(page.getByRole('button', { name: '예약완료' })).toBeVisible();
   await expect(page.getByRole('button', { name: '노쇼' })).toBeVisible();
   await page.screenshot({ path: '/tmp/qa-7-status-tabs.png', fullPage: true });
+});
+
+test('8. 사이드바 — "평상" 워딩 변경 검증', async ({ page }) => {
+  await adminLogin(page);
+  await page.goto(`${BASE}/dashboard`);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByRole('link', { name: '평상 예약 현황' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '평상 시설·운영시간' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '평상 메뉴·이벤트' })).toBeVisible();
+
+  await page.screenshot({ path: '/tmp/qa-v2-sidebar.png', fullPage: true });
 });
 
 test('7. StatsCards BBQ 칩 confirmed 링크 (P0 fix)', async ({ page }) => {
