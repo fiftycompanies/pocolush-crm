@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings, UserCheck, Flame, ShoppingBag, Ticket, Megaphone, Bell, CreditCard, ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid } from 'lucide-react';
 
 interface SidebarProps {
   isAdmin?: boolean;
@@ -20,12 +20,23 @@ const memberNav = [
   { href: '/dashboard/members', label: '회원 관리', icon: UserCheck },
   { href: '/dashboard/memberships', label: '회원권 관리', icon: Award },
   { href: '/dashboard/requests', label: '신청 관리', icon: ClipboardList },
-  { href: '/dashboard/bbq', label: '바베큐 설정', icon: Flame },
-  { href: '/dashboard/bbq-products', label: '바베큐 상품', icon: Flame },
+  { href: '/dashboard/bbq-board', label: 'BBQ 예약 현황', icon: LayoutGrid },
+  { href: '/dashboard/bbq', label: 'BBQ 시설·타임 설정', icon: Flame },
+  { href: '/dashboard/bbq-products', label: 'BBQ 상품·이벤트', icon: Flame },
   { href: '/dashboard/store', label: '스토어 설정', icon: ShoppingBag },
   { href: '/dashboard/plans', label: '플랜 관리', icon: CreditCard },
   { href: '/dashboard/coupons', label: '쿠폰 설정', icon: Ticket },
   { href: '/dashboard/notices', label: '공지 관리', icon: Megaphone },
+];
+
+// 모든 nav href (active 매칭 시 prefix 충돌 검사용)
+const ALL_NAV_HREFS: string[] = [
+  '/dashboard', '/dashboard/inquiries', '/dashboard/farms', '/dashboard/rentals',
+  '/dashboard/members', '/dashboard/memberships', '/dashboard/requests',
+  '/dashboard/bbq-board', '/dashboard/bbq', '/dashboard/bbq-products',
+  '/dashboard/store', '/dashboard/plans', '/dashboard/coupons', '/dashboard/notices',
+  '/dashboard/blog',
+  '/dashboard/warning', '/dashboard/audit-logs', '/dashboard/notifications', '/dashboard/settings',
 ];
 
 const contentNav = [
@@ -46,10 +57,21 @@ export default function Sidebar({ isAdmin = false, unackedWarnings = 0 }: Sideba
     : bottomNavBase;
 
   const renderItem = (item: typeof mainNav[0]) => {
-    const isActive =
-      item.href === '/dashboard'
-        ? pathname === '/dashboard'
-        : pathname.startsWith(item.href);
+    // active 매칭 — 더 긴 prefix 우선 (e.g. `/dashboard/bbq` 가 `/dashboard/bbq-board` 매칭 안 함)
+    let isActive: boolean;
+    if (item.href === '/dashboard') {
+      isActive = pathname === '/dashboard';
+    } else if (pathname === item.href) {
+      isActive = true;
+    } else if (pathname.startsWith(item.href + '/')) {
+      // 다른 메뉴 href 중 현 pathname 을 더 정확히 매칭하는 게 있으면 양보
+      const moreSpecific = ALL_NAV_HREFS.some(
+        h => h !== item.href && h.startsWith(item.href) && (pathname === h || pathname.startsWith(h + '/')),
+      );
+      isActive = !moreSpecific;
+    } else {
+      isActive = false;
+    }
     const Icon = item.icon;
     const isWarning = item.href === '/dashboard/warning';
     const showBadge = isWarning && unackedWarnings > 0;

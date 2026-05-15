@@ -230,6 +230,25 @@ export interface BBQTimeSlot {
 
 export type ReservationStatus = 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 
+/** 072: BBQ 운영 보드 RPC `get_bbq_board(p_date_from, p_date_to)` 반환 row */
+export interface BBQBoardRow {
+  reservation_date: string;     // YYYY-MM-DD (Asia/Seoul)
+  slot_number: number;
+  slot_label: string;
+  slot_start: string;           // 'HH:MM:SS'
+  bbq_number: number;
+  bbq_name: string;
+  facility_active: boolean;
+  status: ReservationStatus | null;  // null = 빈 슬롯
+  member_name: string | null;
+  member_phone: string | null;
+  party_size: number | null;
+  snapshotted_price: number | null;
+  product_name: string | null;
+  is_event: boolean;
+  reservation_id: string | null;
+}
+
 export interface BBQReservation {
   id: string;
   member_id: string;

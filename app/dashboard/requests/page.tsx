@@ -13,32 +13,65 @@ import ServiceOrderDrawer from '@/components/admin-store/ServiceOrderDrawer';
 const TYPE_TABS = [
   { key: '', label: '전체' },
   { key: 'bbq', label: 'BBQ', icon: Flame, color: '#DC2626' },
-  { key: 'order', label: '스토어', icon: ShoppingBag, color: '#D97706' },
+  { key: 'order', label: '스토어', icon: ShoppingBag, color: '#0EA5E9' }, // Q12: orange → sky
   { key: 'coupon', label: '쿠폰', icon: Ticket, color: '#8B5CF6' },
 ] as const;
 
+// Q8: confirmed (예약완료) + no_show 별도 탭 추가
 const STATUS_TABS = [
   { key: '', label: '전체' },
   { key: 'payment_pending', label: '결제 필요' },
   { key: 'pending', label: '대기' },
+  { key: 'confirmed', label: '예약완료' },
   { key: 'processing', label: '처리중' },
   { key: 'completed', label: '완료' },
+  { key: 'no_show', label: '노쇼' },
   { key: 'cancelled', label: '취소' },
 ] as const;
 
 const TYPE_META: Record<string, { icon: typeof Flame; color: string; label: string }> = {
   bbq: { icon: Flame, color: '#DC2626', label: 'BBQ' },
-  order: { icon: ShoppingBag, color: '#D97706', label: '스토어' },
+  order: { icon: ShoppingBag, color: '#0EA5E9', label: '스토어' }, // Q12: sky
   coupon: { icon: Ticket, color: '#8B5CF6', label: '쿠폰' },
 };
 
+// STATUS_META — confirmed + no_show 신규
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   payment_pending: { label: '결제 필요', color: '#DC2626', bg: '#FEF2F2' },
   pending: { label: '대기', color: '#D97706', bg: '#FFFBEB' },
+  confirmed: { label: '예약완료', color: '#059669', bg: '#ECFDF5' },
   processing: { label: '처리중', color: '#3B82F6', bg: '#EFF6FF' },
   completed: { label: '완료', color: '#059669', bg: '#ECFDF5' },
+  no_show: { label: '노쇼', color: '#991B1B', bg: '#FEE2E2' },
   cancelled: { label: '취소', color: '#6B7280', bg: '#F3F4F6' },
 };
+
+// SLA 시간 경과 배경 — 미처리 status 만 적용 (검수 D3 보강)
+const SLA_APPLICABLE: UnifiedStatus[] = ['payment_pending', 'pending', 'confirmed'];
+
+function slaClass(rawStatus: string, unifiedStatus: UnifiedStatus, createdAt: string): string {
+  if (!SLA_APPLICABLE.includes(unifiedStatus)) return '';
+  const hoursAgo = (Date.now() - new Date(createdAt).getTime()) / 3600000;
+  if (hoursAgo >= 24) return 'bg-red-50/40';
+  if (hoursAgo >= 6) return 'bg-amber-100/50';
+  if (hoursAgo >= 1) return 'bg-amber-50/40';
+  return '';
+}
+
+// 한국어 날짜 포맷 + D-day
+function formatReservationDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00+09:00');  // KST 정오 기준 (자정 경계 안전)
+  const weekday = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+  return `${d.getMonth() + 1}/${d.getDate()}(${weekday})`;
+}
+
+function daysAgoLabel(createdAt: string): string {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+  if (days === 0) return '오늘';
+  if (days === 1) return '어제';
+  if (days < 7) return `${days}일 전`;
+  return format(new Date(createdAt), 'M.d');
+}
 
 export default function RequestsPage() {
   const searchParams = useSearchParams();
@@ -53,8 +86,9 @@ export default function RequestsPage() {
   const [search, setSearch] = useState('');
   const [bankInfoOpen, setBankInfoOpen] = useState<string | null>(null);
   const [bankInfo, setBankInfo] = useState<{ bank_name?: string; bank_account?: string; bank_holder?: string; bank_note?: string }>({});
-  // 스토어 주문 상세 드로어 (processing/completed 행 클릭 시 오픈)
   const [drawerOrderId, setDrawerOrderId] = useState<string | null>(null);
+  // S6: in-flight 가드 — 더블클릭 방지
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     supabase.from('settings').select('key, value').in('key', ['bank_name', 'bank_account', 'bank_holder', 'bank_note']).then(({ data }) => {
@@ -98,33 +132,64 @@ export default function RequestsPage() {
     updateURL(typeFilter, status);
   };
 
-  // 인라인 액션: BBQ 상태변경
+  // S5 + S6: error 처리 + busy 가드
   const handleBBQStatus = async (id: string, status: string) => {
-    const update: Record<string, unknown> = { status };
-    if (status === 'cancelled') update.cancelled_at = new Date().toISOString();
-    await supabase.from('bbq_reservations').update(update).eq('id', id);
-    toast.success('상태가 변경되었습니다.'); refetch();
+    if (busy[id]) return;
+    setBusy(b => ({ ...b, [id]: true }));
+    try {
+      const update: Record<string, unknown> = { status };
+      if (status === 'cancelled') update.cancelled_at = new Date().toISOString();
+      const { error } = await supabase.from('bbq_reservations').update(update).eq('id', id);
+      if (error) { toast.error('상태 변경 실패: ' + error.message); return; }
+      toast.success('상태가 변경되었습니다.');
+      refetch();
+    } finally {
+      setBusy(b => ({ ...b, [id]: false }));
+    }
   };
 
-  // 인라인 액션: 스토어 주문 상태변경
   const handleOrderStatus = async (id: string, status: string) => {
-    const update: Record<string, unknown> = { status };
-    if (status === 'completed') update.completed_at = new Date().toISOString();
-    await supabase.from('service_orders').update(update).eq('id', id);
-    toast.success('상태가 변경되었습니다.'); refetch();
+    if (busy[id]) return;
+    setBusy(b => ({ ...b, [id]: true }));
+    try {
+      const update: Record<string, unknown> = { status };
+      if (status === 'completed') update.completed_at = new Date().toISOString();
+      const { error } = await supabase.from('service_orders').update(update).eq('id', id);
+      if (error) { toast.error('상태 변경 실패: ' + error.message); return; }
+      toast.success('상태가 변경되었습니다.');
+      refetch();
+    } finally {
+      setBusy(b => ({ ...b, [id]: false }));
+    }
   };
 
-  // 인라인 액션: 스토어 결제확인
   const handlePayment = async (id: string, ps: string) => {
-    await supabase.from('service_orders').update({ payment_status: ps }).eq('id', id);
-    toast.success('결제 상태가 변경되었습니다.'); refetch();
+    if (busy[id]) return;
+    setBusy(b => ({ ...b, [id]: true }));
+    try {
+      const { error } = await supabase.from('service_orders').update({ payment_status: ps }).eq('id', id);
+      if (error) { toast.error('결제 상태 변경 실패: ' + error.message); return; }
+      toast.success('결제 상태가 변경되었습니다.');
+      refetch();
+    } finally {
+      setBusy(b => ({ ...b, [id]: false }));
+    }
   };
 
-  // 인라인 액션: 쿠폰 사용처리
   const handleCouponUse = async (id: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('coupon_issues').update({ status: 'used', used_at: new Date().toISOString(), used_by: user?.id }).eq('id', id);
-    toast.success('사용 처리되었습니다.'); refetch();
+    if (busy[id]) return;
+    setBusy(b => ({ ...b, [id]: true }));
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('coupon_issues').update({
+        status: 'used', used_at: new Date().toISOString(), used_by: user?.id,
+      }).eq('id', id);
+      if (error) { toast.error('사용 처리 실패: ' + error.message); return; }
+      toast.success('사용 처리되었습니다.');
+      refetch();
+    } finally {
+      setBusy(b => ({ ...b, [id]: false }));
+    }
   };
 
   const filtered = items.filter(r => {
@@ -133,7 +198,6 @@ export default function RequestsPage() {
     return r.memberName.toLowerCase().includes(q) || r.memberPhone.includes(q);
   });
 
-  // 타입별 카운트
   const typeCounts = { bbq: 0, order: 0, coupon: 0 };
   items.forEach(i => { typeCounts[i.type]++; });
 
@@ -168,10 +232,10 @@ export default function RequestsPage() {
 
       {/* 상태 탭 + 검색 */}
       <div className="flex items-center gap-4">
-        <div className="flex gap-1 border-b border-border flex-1">
+        <div className="flex gap-1 border-b border-border flex-1 overflow-x-auto">
           {STATUS_TABS.map(t => (
             <button key={t.key} onClick={() => handleStatusChange(t.key)}
-              className={`px-4 py-2.5 text-sm font-medium relative ${
+              className={`shrink-0 px-3 py-2.5 text-sm font-medium relative ${
                 statusFilter === t.key ? 'text-primary' : 'text-text-tertiary hover:text-text-primary'
               }`}>
               {t.label}
@@ -196,61 +260,114 @@ export default function RequestsPage() {
       ) : (
         <div className="bg-card border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-border text-left">
-              <th className="px-4 py-3 font-medium text-text-secondary w-20">구분</th>
-              <th className="px-4 py-3 font-medium text-text-secondary">신청자</th>
-              <th className="px-4 py-3 font-medium text-text-secondary">연락처</th>
-              <th className="px-4 py-3 font-medium text-text-secondary">내용</th>
-              <th className="px-4 py-3 font-medium text-text-secondary">날짜</th>
-              <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
-              <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
-            </tr></thead>
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="px-4 py-3 font-medium text-text-secondary w-20">구분</th>
+                <th className="px-4 py-3 font-medium text-text-secondary">신청자</th>
+                <th className="px-4 py-3 font-medium text-text-secondary">내용</th>
+                <th className="px-4 py-3 font-medium text-text-secondary w-28">예약일</th>
+                <th className="px-4 py-3 font-medium text-text-secondary w-20">신청</th>
+                <th className="px-4 py-3 font-medium text-text-secondary">상태</th>
+                <th className="px-4 py-3 font-medium text-text-secondary">액션</th>
+              </tr>
+            </thead>
             <tbody>
               {filtered.map(r => {
                 const tm = TYPE_META[r.type];
                 const sm = STATUS_META[r.unifiedStatus];
                 const Icon = tm.icon;
-                // 결정 #4: processing/completed 스토어 주문은 행 클릭으로 드로어 오픈
                 const isOrderDetailClickable = r.type === 'order' && (r.rawStatus === 'processing' || r.rawStatus === 'completed');
+                const slaBg = slaClass(r.rawStatus, r.unifiedStatus, r.date);
                 return (
                   <tr
                     key={r.id + r.type}
-                    className={`border-b border-border last:border-0 hover:bg-accent/30 ${isOrderDetailClickable ? 'cursor-pointer' : ''}`}
+                    data-testid={`request-row-${r.type}-${r.id}`}
+                    data-status={r.unifiedStatus}
+                    className={`border-b border-border last:border-0 hover:bg-accent/30 ${isOrderDetailClickable ? 'cursor-pointer' : ''} ${slaBg}`}
                     style={{ borderLeft: `3px solid ${tm.color}` }}
                     onClick={isOrderDetailClickable ? () => setDrawerOrderId(r.id) : undefined}
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
-                        <Icon className="size-3.5" style={{ color: tm.color }} />
+                        <Icon className="size-3.5" style={{ color: tm.color }} aria-hidden="true" />
                         <span className="text-xs font-medium" style={{ color: tm.color }}>{tm.label}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-medium">{r.memberName}</td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">{r.memberPhone}</td>
-                    <td className="px-4 py-3 text-text-secondary">{r.detail}</td>
-                    <td className="px-4 py-3 text-xs text-text-secondary">{format(new Date(r.date), 'M.d HH:mm')}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{r.memberName}</div>
+                      <div className="text-[11px] text-text-tertiary">{r.memberPhone}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.type === 'bbq' && r.bbqMeta ? (
+                        <>
+                          {/* Q1: Sentry 2-line 패턴 — Q9: BBQ 만 */}
+                          <div className="text-sm font-medium tabular-nums" data-testid="bbq-detail">
+                            #{r.bbqMeta.bbqNumber}번
+                            <span className="mx-1.5 text-text-tertiary">·</span>
+                            {r.bbqMeta.timeLabel}
+                            <span className="mx-1.5 text-text-tertiary">·</span>
+                            {r.bbqMeta.partySize}인
+                            <span className="mx-1.5 text-text-tertiary">·</span>
+                            ₩{r.amount.toLocaleString()}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] text-text-tertiary truncate">
+                              {r.bbqMeta.productName ?? '기본 상품'}
+                            </span>
+                            {r.bbqMeta.isEvent && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded border border-rose-300 text-rose-600 font-medium" data-testid="bbq-event-badge">
+                                이벤트
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-text-secondary">{r.detail}</span>
+                      )}
+                    </td>
+                    {/* Q10: 예약일 / 신청일 분리 */}
+                    <td className="px-4 py-3 text-xs">
+                      {r.bbqMeta ? (
+                        <span className="font-medium text-text-primary" data-testid="bbq-reservation-date">
+                          {formatReservationDate(r.bbqMeta.reservationDate)}
+                        </span>
+                      ) : (
+                        <span className="text-text-tertiary">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-[11px] text-text-tertiary">
+                      {daysAgoLabel(r.date)}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                        style={{ color: sm.color, backgroundColor: sm.bg }}>{sm.label}</span>
+                        style={{ color: sm.color, backgroundColor: sm.bg }}
+                        data-testid={`status-badge-${r.unifiedStatus}`}>
+                        {sm.label}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       {/* BBQ 액션 */}
                       {r.type === 'bbq' && r.rawStatus === 'confirmed' && (
-                        <select defaultValue="" onClick={e => e.stopPropagation()} onChange={e => { if (e.target.value) handleBBQStatus(r.id, e.target.value); e.target.value = ''; }}
-                          className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary">
-                          <option value="" disabled>변경</option>
+                        <select
+                          defaultValue=""
+                          disabled={busy[r.id]}
+                          onClick={e => e.stopPropagation()}
+                          onChange={e => { if (e.target.value) handleBBQStatus(r.id, e.target.value); e.target.value = ''; }}
+                          className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary disabled:opacity-40">
+                          <option value="" disabled>{busy[r.id] ? '처리중...' : '변경'}</option>
                           <option value="completed">완료</option>
                           <option value="no_show">노쇼</option>
                           <option value="cancelled">취소</option>
                         </select>
                       )}
-                      {/* 스토어 액션 — 결정 #4: 상태별 분기 */}
-                      {/* payment_pending / pending: 인라인 (드롭다운 + 계좌 + 결제처리) */}
                       {r.type === 'order' && (r.rawStatus === 'payment_pending' || r.rawStatus === 'pending') && (
                         <div className="flex gap-1 flex-wrap" onClick={e => e.stopPropagation()}>
-                          <select defaultValue="" onChange={e => { if (e.target.value) handleOrderStatus(r.id, e.target.value); e.target.value = ''; }}
-                            className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary">
-                            <option value="" disabled>상태</option>
+                          <select
+                            defaultValue=""
+                            disabled={busy[r.id]}
+                            onChange={e => { if (e.target.value) handleOrderStatus(r.id, e.target.value); e.target.value = ''; }}
+                            className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:border-primary disabled:opacity-40">
+                            <option value="" disabled>{busy[r.id] ? '처리중...' : '상태'}</option>
                             <option value="processing">입금 확인 → 대기</option>
                             <option value="cancelled">취소</option>
                           </select>
@@ -259,12 +376,15 @@ export default function RequestsPage() {
                               className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 font-medium border border-red-200">계좌 안내</button>
                           )}
                           {r.paymentStatus !== '납부완료' && (
-                            <button onClick={() => handlePayment(r.id, '납부완료')}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-green-light text-green font-medium">결제 처리</button>
+                            <button
+                              onClick={() => handlePayment(r.id, '납부완료')}
+                              disabled={busy[r.id]}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-green-light text-green font-medium disabled:opacity-40">
+                              결제 처리
+                            </button>
                           )}
                         </div>
                       )}
-                      {/* processing / completed: 드로어 트리거 */}
                       {r.type === 'order' && (r.rawStatus === 'processing' || r.rawStatus === 'completed') && (
                         <button
                           onClick={e => { e.stopPropagation(); setDrawerOrderId(r.id); }}
@@ -273,10 +393,13 @@ export default function RequestsPage() {
                           {r.rawStatus === 'processing' ? '사진 · 완료처리' : '결과물 보기'}
                         </button>
                       )}
-                      {/* 쿠폰 액션 */}
                       {r.type === 'coupon' && r.rawStatus === 'issued' && (
-                        <button onClick={e => { e.stopPropagation(); handleCouponUse(r.id); }}
-                          className="text-[10px] px-2 py-1 rounded-md bg-violet-100 text-violet-700 font-medium">사용처리</button>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleCouponUse(r.id); }}
+                          disabled={busy[r.id]}
+                          className="text-[10px] px-2 py-1 rounded-md bg-violet-100 text-violet-700 font-medium disabled:opacity-40">
+                          사용처리
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -345,7 +468,6 @@ export default function RequestsPage() {
         </>
       )}
 
-      {/* 스토어 주문 상세 드로어 (processing / completed) */}
       {drawerOrderId && (
         <ServiceOrderDrawer
           orderId={drawerOrderId}
