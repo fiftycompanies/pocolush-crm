@@ -91,9 +91,19 @@ export default function AdminNoticesPage() {
     try {
       const { data, error } = await supabase.rpc('toggle_notice_pin', { p_notice_id: noticeId });
       if (error) {
+        // 진단 로그 — Sentry 자동 캡쳐 + 운영자 콘솔 확인용
+        console.error('[toggle_notice_pin] full error:', {
+          message: error.message, code: error.code, details: error.details, hint: error.hint,
+          noticeId,
+        });
         if (error.message.includes('not_admin')) toast.error('권한이 없습니다.');
         else if (error.message.includes('notice_not_found')) toast.error('공지를 찾을 수 없습니다.');
-        else toast.error('고정 변경에 실패했습니다.');
+        else if (error.message.toLowerCase().includes('jwt') || error.message.toLowerCase().includes('expired')) {
+          toast.error('세션이 만료되었습니다. 페이지를 새로고침해주세요.');
+        } else {
+          // 정확한 원인 진단 위해 message 전체 노출 (10초)
+          toast.error(`고정 변경 실패: ${error.message || error.code || '알 수 없는 오류'}`, { duration: 10000 });
+        }
         return;
       }
       const isNowPinned = data !== null;
