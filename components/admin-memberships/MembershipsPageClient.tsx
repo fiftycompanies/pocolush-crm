@@ -19,6 +19,8 @@ interface Props {
 
 export default function MembershipsPageClient({ initialMemberId, initialExpiring }: Props) {
   const today = new Date();
+  // PR-C1: D-7 / D-30 두 임계 (기존 상수 재사용, 신규 상수 도입 X)
+  const sevenDays = new Date(today.getTime() + 7 * 86400_000).toISOString().slice(0, 10);
   const thirtyDays = new Date(today.getTime() + 30 * 86400_000).toISOString().slice(0, 10);
 
   const [filters, setFilters] = useState<F>({
@@ -36,7 +38,11 @@ export default function MembershipsPageClient({ initialMemberId, initialExpiring
     const now = today.toISOString().slice(0, 10);
     return {
       active: rows.filter(r => r.status === 'active' && r.end_date >= now).length,
-      expiringSoon: rows.filter(
+      // PR-C1: D-7 (위험) / D-30 (주의) 분리. D-7 ⊂ D-30.
+      expiringIn7: rows.filter(
+        r => r.status === 'active' && r.end_date >= now && r.end_date <= sevenDays
+      ).length,
+      expiringIn30: rows.filter(
         r => r.status === 'active' && r.end_date >= now && r.end_date <= thirtyDays
       ).length,
       cancelled: rows.filter(r => r.status === 'cancelled').length,
@@ -44,7 +50,7 @@ export default function MembershipsPageClient({ initialMemberId, initialExpiring
         r => r.created_at.slice(0, 7) === today.toISOString().slice(0, 7)
       ).length,
     };
-  }, [rows, today, thirtyDays]);
+  }, [rows, today, sevenDays, thirtyDays]);
 
   const handleSelect = (id: string, checked: boolean) => {
     setSelected(prev => {

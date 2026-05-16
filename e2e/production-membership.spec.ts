@@ -57,7 +57,7 @@ test('운영: /dashboard/memberships 페이지 렌더링', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '회원권 관리' })).toBeVisible();
 
   // 상단 카드 4개 — paragraph 안쪽 라벨만 매칭
-  await expect(page.locator('p', { hasText: /^만료 임박/ })).toBeVisible();
+  await expect(page.locator('p', { hasText: /^회원권 만료 임박/ })).toBeVisible();
   await expect(page.locator('p', { hasText: /^취소\/정지$/ })).toBeVisible();
   await expect(page.locator('p', { hasText: /^이번 달 신규 발급$/ })).toBeVisible();
 

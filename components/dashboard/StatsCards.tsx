@@ -53,14 +53,22 @@ export default function StatsCards() {
         </div>
       </div>
 
-      {/* 이달 만료 */}
+      {/* 임대 만료 임박 — D-7 / D-30 한 카드 2-값 (PR-C1, Q-C1=한카드2값) */}
       <Link href="/dashboard/rentals" className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer">
         <div className="flex items-start justify-between">
-          <p className="text-xs font-medium text-muted-foreground">이달 만료</p>
+          <p className="text-xs font-medium text-muted-foreground">임대 만료 임박</p>
           <div className="size-8 rounded-lg bg-red/10 flex items-center justify-center"><CalendarClock className="size-4 text-red" /></div>
         </div>
-        <p className="text-2xl font-bold tracking-tight mt-2">{s.expiringThisMonth}<span className="text-sm font-normal text-muted-foreground ml-1">건</span></p>
-        <p className="text-[11px] text-muted-foreground mt-1">임대 계약 만료 예정</p>
+        <div className="flex items-baseline gap-3 mt-2">
+          <div>
+            <p className="text-2xl font-bold tracking-tight text-red-600">{s.farmExpiringIn7}<span className="text-sm font-normal text-muted-foreground ml-1">건</span></p>
+            <p className="text-[11px] text-red-600/80 mt-0.5">D-7</p>
+          </div>
+          <div className="opacity-60">
+            <p className="text-xl font-semibold tracking-tight text-amber-600">{s.farmExpiringIn30}<span className="text-xs font-normal text-muted-foreground ml-1">건</span></p>
+            <p className="text-[11px] text-amber-600/80 mt-0.5">D-30</p>
+          </div>
+        </div>
       </Link>
 
       {/* 이달 매출 */}

@@ -23,7 +23,10 @@ export interface DashboardStats {
   pendingOrders: number;
   pendingCoupons: number;
   pendingTotal: number;
-  expiringThisMonth: number;
+  /** 농장 임대 만료 임박 (D-7) — farm_rentals.end_date 기준 (PR-C1) */
+  farmExpiringIn7: number;
+  /** 농장 임대 만료 임박 (D-30) — farm_rentals.end_date 기준 (PR-C1) */
+  farmExpiringIn30: number;
   monthlyRevenue: number;
 }
 
@@ -32,7 +35,7 @@ export function useDashboardStats() {
     totalFarms: 0, rentedFarms: 0, rentalRate: 0,
     unprocessedInquiries: 0,
     pendingBBQ: 0, pendingOrders: 0, pendingCoupons: 0, pendingTotal: 0,
-    expiringThisMonth: 0, monthlyRevenue: 0,
+    farmExpiringIn7: 0, farmExpiringIn30: 0, monthlyRevenue: 0,
   })
   const [loading, setLoading] = useState(true)
 
@@ -40,24 +43,28 @@ export function useDashboardStats() {
     if (!HAS_SUPABASE) { setLoading(false); return }
     const fetchStats = async () => {
       const { createClient } = await import('./supabase/client')
+      const { EXPIRY_DANGER_DAYS, EXPIRY_WARNING_DAYS } = await import('./constants')
       const supabase = createClient()
       const today = new Date()
-      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
+      const todayStr = today.toISOString().split('T')[0]
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+      const in7 = new Date(today.getTime() + EXPIRY_DANGER_DAYS * 86400_000).toISOString().split('T')[0]
+      const in30 = new Date(today.getTime() + EXPIRY_WARNING_DAYS * 86400_000).toISOString().split('T')[0]
 
       const [
         totalFarmsRes, rentedFarmsRes,
         inquiriesRes,
         bbqRes, ordersRes, couponsRes,
-        expiringRes, revenueRes,
+        expiring7Res, expiring30Res, revenueRes,
       ] = await Promise.all([
         supabase.from('farms_active').select('id', { count: 'exact', head: true }),
         supabase.from('farms_active').select('id', { count: 'exact', head: true }).eq('status', 'rented'),
         supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        supabase.from('bbq_reservations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').gte('reservation_date', today.toISOString().split('T')[0]),
+        supabase.from('bbq_reservations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').gte('reservation_date', todayStr),
         supabase.from('service_orders').select('id', { count: 'exact', head: true }).in('status', ['payment_pending', 'processing']),
         supabase.from('coupon_issues').select('id', { count: 'exact', head: true }).eq('status', 'issued'),
-        supabase.from('farm_rentals').select('id', { count: 'exact', head: true }).eq('status', 'active').lte('end_date', monthEnd).gte('end_date', monthStart),
+        supabase.from('farm_rentals').select('id', { count: 'exact', head: true }).eq('status', 'active').gte('end_date', todayStr).lte('end_date', in7),
+        supabase.from('farm_rentals').select('id', { count: 'exact', head: true }).eq('status', 'active').gte('end_date', todayStr).lte('end_date', in30),
         supabase.from('farm_rentals').select('monthly_fee').eq('payment_status', '납부완료').gte('created_at', monthStart),
       ])
 
@@ -77,7 +84,8 @@ export function useDashboardStats() {
         pendingOrders: pOrders,
         pendingCoupons: pCoupons,
         pendingTotal: pBBQ + pOrders + pCoupons,
-        expiringThisMonth: expiringRes.count ?? 0,
+        farmExpiringIn7: expiring7Res.count ?? 0,
+        farmExpiringIn30: expiring30Res.count ?? 0,
         monthlyRevenue: revenue,
       })
       setLoading(false)
