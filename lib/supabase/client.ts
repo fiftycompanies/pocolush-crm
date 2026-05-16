@@ -54,5 +54,29 @@ export function createClient() {
   }
 
   _client = _make(url, key);
+
+  // PR 2 (2026-05-16): Realtime 401 race 차단
+  //
+  // 배경: createBrowserClient 호출 동안 내부 realtime 즉시 connect 시도 →
+  //       accessTokenFn 호출 시 _client 가 아직 null → anon fallback → 8건 401 race.
+  //       singleton 생성 직후 명시적 setAuth() 호출하여 첫 reconnect 부터 user token 사용.
+  //
+  // 동작:
+  // - getSession() 비동기 호출 (메모리 캐시된 session 이므로 ~1ms)
+  // - access_token 있으면 realtime.setAuth() → 다음 reconnect 부터 user token
+  // - 첫 connection race 는 accessTokenFn fallback 으로 처리 (이제 _client 존재)
+  //
+  // 근거: Supabase 공식 가이드 (Realtime Authorization)
+  void (async () => {
+    try {
+      const { data: { session } } = await _client!.auth.getSession();
+      if (session?.access_token) {
+        _client!.realtime.setAuth(session.access_token);
+      }
+    } catch {
+      // session fetch 실패 시 anon fallback 유지 (RLS 정책이 차단)
+    }
+  })();
+
   return _client;
 }
