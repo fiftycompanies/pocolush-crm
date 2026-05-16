@@ -45,3 +45,6 @@ next-env.d.ts
 test-results/
 playwright-report/
 
+# Supabase CLI temp files (auto-generated, not source)
+supabase/.temp/
+
