@@ -61,8 +61,8 @@ test('2. BBQ 보드 — KPI + 매트릭스 + 평상 워딩', async ({ page }) =>
   await page.goto(`${BASE}/dashboard/bbq-board`);
   await page.waitForLoadState('networkidle');
 
-  // 워딩 변경 검증 — "평상 예약 현황"
-  await expect(page.getByRole('heading', { name: '평상 예약 현황' })).toBeVisible();
+  // 워딩 변경 검증 — "평상 현황" (2026-05-16 단축)
+  await expect(page.getByRole('heading', { name: '평상 현황', level: 1 })).toBeVisible();
   await expect(page.locator('[data-testid="board-kpi-card"]')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('[data-testid="kpi-confirmed"]')).toBeVisible();
   await expect(page.locator('[data-testid="kpi-noshow"]')).toBeVisible();
@@ -137,8 +137,10 @@ test('8. 사이드바 — "평상" 워딩 변경 검증', async ({ page }) => {
   await page.goto(`${BASE}/dashboard`);
   await page.waitForLoadState('networkidle');
 
-  await expect(page.getByRole('link', { name: '평상 예약 현황' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '평상 현황' })).toBeVisible();
   await expect(page.getByRole('link', { name: '평상 설정' })).toBeVisible();
+  // 농장 현황 사이드바 추가 (2026-05-16) — [일별 운영] 그룹
+  await expect(page.getByRole('link', { name: '농장 현황' })).toBeVisible();
   // 평상 메뉴(bbq-products) 는 평상 설정 §3 섹션으로 통합 (2026-05-16) — 사이드바에서 제거
   await expect(page.getByRole('link', { name: '평상 메뉴' })).toHaveCount(0);
 

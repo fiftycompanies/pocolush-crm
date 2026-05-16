@@ -62,6 +62,10 @@ export interface FarmZone {
   description: string | null;
   sort_order: number;
   is_active: boolean;
+  /** 062b: 운영 zone 여부 (false 면 'C존', 'ㅇㅇ' 등 비운영) */
+  is_operational?: boolean;
+  /** 031: soft delete */
+  deleted_at?: string | null;
   created_at: string;
   farms?: Farm[];
 }

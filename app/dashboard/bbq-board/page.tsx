@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
-import { Search, RefreshCw, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Search, RefreshCw, AlertCircle, Settings2, ArrowRight } from 'lucide-react';
 import { useBBQBoard, todayKST, dateOffsetKST } from '@/lib/use-bbq-board';
 import BoardKpiCard from '@/components/admin-bbq/BoardKpiCard';
 import BoardMatrix from '@/components/admin-bbq/BoardMatrix';
@@ -120,7 +121,7 @@ function BoardClient() {
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">평상 예약 현황</h1>
+          <h1 className="text-[22px] font-bold text-text-primary tracking-tight">평상 현황</h1>
           <p className="text-sm text-text-secondary mt-1">오늘·내일·이번 주 예약을 실시간 확인합니다. 운영 중단된 시설이라도 예약이 남아 있으면 표시됩니다.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -141,6 +142,16 @@ function BoardClient() {
           >
             <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
+          {/* 관리하기 → /dashboard/bbq (평상 설정 통합 페이지) — kk Q5=1 */}
+          <Link
+            href="/dashboard/bbq"
+            data-testid="bbq-board-manage"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm hover:bg-accent cursor-pointer transition-colors"
+          >
+            <Settings2 className="size-4" />
+            관리하기
+            <ArrowRight className="size-3.5" />
+          </Link>
         </div>
       </div>
 

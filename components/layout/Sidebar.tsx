@@ -6,7 +6,7 @@ import {
   LayoutDashboard, MessageSquare, Map, FileText, FileEdit, Settings,
   UserCheck, ShoppingBag, Ticket, Megaphone, Bell, CreditCard,
   ClipboardList, AlertTriangle, Award, ClipboardCheck, LayoutGrid,
-  Settings2,
+  Settings2, Grid3x3,
 } from 'lucide-react';
 
 // U2-IA: feature flag — 미설정 시 기존 단일 그룹(legacy) 동작 유지
@@ -49,7 +49,7 @@ const legacyMemberNav: NavItem[] = [
   { href: '/dashboard/members', label: '회원 관리', icon: UserCheck },
   { href: '/dashboard/memberships', label: '회원권 관리', icon: Award },
   { href: '/dashboard/requests', label: '신청 관리', icon: ClipboardList },
-  { href: '/dashboard/bbq-board', label: '평상 예약 현황', icon: LayoutGrid },
+  { href: '/dashboard/bbq-board', label: '평상 현황', icon: LayoutGrid },
   { href: '/dashboard/bbq', label: '평상 설정', icon: Settings2 },
   // 평상 메뉴 (bbq-products) 는 2026-05-16 평상 설정 §3 섹션으로 통합 (redirect 유지)
   { href: '/dashboard/store', label: '스토어 설정', icon: ShoppingBag },
@@ -67,8 +67,10 @@ const legacyContentNav: NavItem[] = [
 // ───────────────────────────────────────────────────────────────
 const dailyOpsNav: NavItem[] = [
   { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
+  // kk 2026-05-16: [일별 운영] 순서 변경 + "평상 현황" 라벨 단축
+  { href: '/dashboard/farms-board', label: '농장 현황', icon: Grid3x3 },
+  { href: '/dashboard/bbq-board', label: '평상 현황', icon: LayoutGrid },
   { href: '/dashboard/requests', label: '신청 관리', icon: ClipboardList },
-  { href: '/dashboard/bbq-board', label: '평상 예약 현황', icon: LayoutGrid },
   { href: '/dashboard/inquiries', label: '문의 관리', icon: MessageSquare },
 ];
 
