@@ -6,8 +6,10 @@ import { Search, RefreshCw, Settings2, ArrowRight } from 'lucide-react';
 import { useFarmsBoard } from '@/lib/use-farms-board';
 import FarmsBoardKpi from '@/components/admin-farms/FarmsBoardKpi';
 import FarmsBoardMatrix from '@/components/admin-farms/FarmsBoardMatrix';
+import FarmHistorySection from '@/components/admin-farms/FarmHistorySection';
 import FarmDrawer from '@/components/farms/FarmDrawer';
 import type { Farm } from '@/types';
+import type { FarmHistoryRow } from '@/lib/use-farm-history';
 
 /**
  * /dashboard/farms-board — 농장 운영 현황 (2026-05-16)
@@ -120,6 +122,16 @@ export default function FarmsBoardPage() {
           onFarmClick={setSelectedFarm}
         />
       )}
+
+      {/* §이력 검색 (마이그 087, 모든 status 검색) */}
+      <FarmHistorySection
+        zones={zones.filter((z) => z.is_operational !== false)}
+        onRowClick={(row: FarmHistoryRow) => {
+          // 행 클릭 → 매트릭스에서 해당 농장 찾아 Drawer 오픈 (현재 데이터에 있을 때만)
+          const found = farms.find((f) => f.id === row.farm_id);
+          if (found) setSelectedFarm(found);
+        }}
+      />
 
       {/* 사이드 패널 (FarmDrawer 재활용) */}
       <FarmDrawer
