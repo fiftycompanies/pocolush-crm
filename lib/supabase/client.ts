@@ -1,31 +1,37 @@
 import { createBrowserClient } from '@supabase/ssr';
 
 /**
- * Browser Supabase client — singleton + Realtime 401 옵션 6 (2026-05-16)
+ * Browser Supabase client — singleton + Realtime 401 옵션 7 (2026-05-16)
  *
- * 진단 history (5차 시도):
+ * 진단 history (6차 시도):
  *   1. TopBar setAuth (5361889) — 8건
  *   2. singleton + realtime.accessToken (9de7b51) — 16건
  *   3. createBrowserClient 직후 setAuth IIFE (676aaef) — 28건 (역효과)
- *   4. localStorage + global.headers + realtime.params (97d4a72) — 3건 (89%↓, 잔존)
- *      ↳ 진단: @supabase/ssr 는 cookie 인증 → localStorage 비어있음
+ *   4. localStorage + global.headers + realtime.params (97d4a72) — 3건 (89%↓)
+ *   5. cookie + localStorage + global.headers + realtime.params (5cde1b3) — 6건
+ *      ↳ 진단: socketerror = "HTTP Authentication failed; no valid credentials"
+ *      ↳ URL 에 apikey(anon) + access_token(user) 동시 전달 → Supabase Realtime 서버 충돌
+ *      ↳ realtime-js 표준 흐름: URL=apikey, phx_join payload=access_token
  *
- * **옵션 6 (현재)** — 5차 시도:
- *   ① document.cookie 동기 파싱 → `sb-<ref>-auth-token` 추출 (base64- prefix decode)
- *   ② localStorage 동기 fallback (옵션 5 유지 — hybrid 환경 대응)
- *   ③ global.headers.Authorization (REST/HTTP 첫 요청)
- *   ④ realtime.params.access_token (WebSocket URL 첫 connection)
- *   ⑤ realtime.accessToken + setAuth IIFE 보조 (후속 reconnect)
+ * **옵션 7 (현재)** — 6차 시도:
+ *   ① document.cookie 동기 파싱 → `sb-<ref>-auth-token` 추출 (옵션 6 유지)
+ *   ② localStorage 동기 fallback (hybrid 환경 대응)
+ *   ③ global.headers.Authorization (REST/HTTP 첫 요청 — WebSocket 무영향)
+ *   ④ realtime.params 에서 access_token 제거 (apikey 만 — realtime-js 표준)
+ *   ⑤ IIFE setAuth(initialToken) 동기 호출 — channel join 전 user JWT 보장
+ *   ⑥ realtime.accessToken 콜백 (후속 reconnect)
  *
  * 영향 분석 (검수 완료):
  *   - 본 파일 단일 변경 (lib/supabase/server.ts, middleware.ts 별개 createServerClient)
- *   - 회원 측 /m/* + 어드민 /dashboard/* 동일 createClient() — 회원 JWT 도 동일 흐름
+ *   - 회원 측 /m/* + 어드민 /dashboard/* 동일 createClient() — 동일 흐름
  *   - signIn/signOut/인증 흐름 변경 0 (cookie 읽기 전용)
  *   - SSR 안전 (typeof document/window 가드)
  *   - 모든 분기 fallback null → 기존 anon 폴백 (회귀 0)
+ *   - realtime-js 표준 흐름 복귀로 Supabase 서버 인증 충돌 해소
  *
  * 근거: thoughts/research/20260516-1930_realtime_401_deep_and_farms_rpc_research.md
- *       @supabase/ssr 0.9.0 cookies.js (base64- prefix + base64url + chunked .0/.1)
+ *       @supabase/ssr 0.9.0 cookies.js (base64- prefix + base64url + chunked)
+ *       @supabase/realtime-js RealtimeClient (URL apikey + phx_join access_token)
  */
 
 /**
@@ -112,13 +118,13 @@ const _make = (url: string, key: string, initialToken: string | null) => {
     realtime: {
       // 후속 reconnect 대응 (singleton 한 번만 호출)
       accessToken: accessTokenFn,
-      params: initialToken
-        ? { apikey: key, access_token: initialToken }
-        : { apikey: key },
+      // 옵션 7: realtime-js 표준 — URL 은 apikey 만, channel join 시 access_token
+      // (URL 에 access_token 동시 전달 시 "HTTP Authentication failed" 충돌)
+      params: { apikey: key },
     },
   };
   if (initialToken) {
-    // REST/HTTP 첫 요청부터 user JWT 전달
+    // REST/HTTP 첫 요청부터 user JWT 전달 (WebSocket 무영향)
     opts.global = {
       headers: { Authorization: `Bearer ${initialToken}` },
     };
@@ -153,15 +159,24 @@ export function createClient() {
     );
   }
 
-  // 옵션 6: cookie → localStorage 동기 추출 → 첫 connection 시점부터 JWT 전달
+  // 옵션 7: cookie → localStorage 동기 추출 → IIFE setAuth 즉시 호출
   const initialToken = getInitialToken();
   _client = _make(url, key, initialToken);
+
+  // 핵심: 동기 추출된 token 즉시 setAuth → channel join 전 accessTokenValue 보장
+  if (initialToken) {
+    try {
+      _client.realtime.setAuth(initialToken);
+    } catch {
+      // setAuth 실패 시 후속 IIFE 가 보조
+    }
+  }
 
   // 보조 안전망: cookie/localStorage 둘 다 비어있는 경우 (로그인 직후 race)
   void (async () => {
     try {
       const { data: { session } } = await _client!.auth.getSession();
-      if (session?.access_token) {
+      if (session?.access_token && session.access_token !== initialToken) {
         _client!.realtime.setAuth(session.access_token);
       }
     } catch {
