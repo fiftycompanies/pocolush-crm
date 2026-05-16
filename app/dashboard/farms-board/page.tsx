@@ -29,7 +29,7 @@ import type { Farm } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default function FarmsBoardPage() {
-  const { data: farms, zones, refetch } = useFarms();
+  const { data: farms, zones, loading, refetch } = useFarms();
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [search, setSearch] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -108,12 +108,18 @@ export default function FarmsBoardPage() {
       {/* KPI 카드 5종 */}
       <FarmsBoardKpi farms={farms} zones={zones} />
 
-      {/* 매트릭스 */}
-      <FarmsBoardMatrix
-        farms={filteredFarms}
-        zones={zones}
-        onFarmClick={setSelectedFarm}
-      />
+      {/* 매트릭스 (loading 시 spinner) */}
+      {loading && farms.length === 0 ? (
+        <div className="bg-card border rounded-xl p-10 text-center text-sm text-text-secondary">
+          불러오는 중...
+        </div>
+      ) : (
+        <FarmsBoardMatrix
+          farms={filteredFarms}
+          zones={zones}
+          onFarmClick={setSelectedFarm}
+        />
+      )}
 
       {/* 사이드 패널 (FarmDrawer 재활용) */}
       <FarmDrawer
