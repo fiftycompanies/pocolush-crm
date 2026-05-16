@@ -9,10 +9,9 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { ADMIN_EMAIL, ADMIN_PW } from './helpers/admin-credentials';
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'https://app.pocolush.com';
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'admin@pocolush.co.kr';
-const ADMIN_PW = process.env.E2E_ADMIN_PW || '123456';
 
 async function adminLogin(page: Page) {
   await page.goto(`${BASE}/login`);

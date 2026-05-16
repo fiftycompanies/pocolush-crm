@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+import { ADMIN_EMAIL, ADMIN_PW } from './helpers/admin-credentials';
+
 const BASE = 'https://app.pocolush.com';
-const ADMIN_EMAIL = 'admin@pocolush.co.kr';
-const ADMIN_PW = '123456';
 
 test.describe.configure({ mode: 'serial' });
 

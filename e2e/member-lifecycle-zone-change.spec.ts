@@ -12,10 +12,9 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { ADMIN_EMAIL, ADMIN_PW } from './helpers/admin-credentials';
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'https://app.pocolush.com';
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'admin@pocolush.co.kr';
-const ADMIN_PW = process.env.E2E_ADMIN_PW || '123456';
 
 // 테스트 대상 회원 (이전 세션 검증으로 안전 확인)
 const TEST_MEMBER_NAME = 'QA테스트회원';
