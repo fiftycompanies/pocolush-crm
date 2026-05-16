@@ -40,12 +40,36 @@ jobs:
         with:
           fetch-depth: 0  # 전체 히스토리
 
-      - name: TruffleHog OSS
+      # push to main 시 base=main, head=HEAD 가 같은 commit 으로 resolve 되어
+      # "BASE and HEAD commits are the same" 으로 즉시 실패 (0s).
+      # 이벤트별 base 분기:
+      #   - pull_request: base.sha (PR target branch tip)
+      #   - push: event.before (직전 commit)
+      #   - schedule/manual: 미설정 (TruffleHog 자체 기본값 — 최근 한 commit)
+      - name: TruffleHog OSS (PR)
+        if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          extra_args: --only-verified
+
+      - name: TruffleHog OSS (push)
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.event.after }}
+          extra_args: --only-verified
+
+      # 첫 push (before == 0000...) 또는 schedule/manual 트리거 시 전체 스캔
+      - name: TruffleHog OSS (full)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000')
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
           extra_args: --only-verified
 
   dependency-review:
