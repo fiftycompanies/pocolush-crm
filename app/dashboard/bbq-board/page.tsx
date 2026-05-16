@@ -50,11 +50,20 @@ type Tab = 'today' | 'tomorrow' | 'week';
 
 export const dynamic = 'force-dynamic';
 
+// 친화 시간 표시 — 자정 mismatch 회피 + 운영자 인지 friendly (PR 1, 2026-05-16)
+function formatAgo(sec: number): string {
+  if (sec < 5) return '방금 갱신';
+  if (sec < 60) return `${Math.floor(sec)}초 전 갱신`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}분 전 갱신`;
+  return `${Math.floor(sec / 3600)}시간 전 갱신`;
+}
+
 function BoardClient() {
   const [tab, setTab] = useState<Tab>('today');
   const [selectedRow, setSelectedRow] = useState<BBQBoardRow | null>(null);
   const [search, setSearch] = useState('');
   const [facilities, setFacilities] = useState<{ number: number; name: string }[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);  // PR 1: 시각 피드백
 
   // 시설 목록 1회 fetch (이력 검색 시설 필터 드롭다운용)
   useEffect(() => {
@@ -85,6 +94,18 @@ function BoardClient() {
     resumePolling();
   };
 
+  // PR 1 (2026-05-16): 새로고침 시각 피드백 — 중복 차단 + 회전 + 최소 600ms 보장
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    const minDelay = new Promise((r) => setTimeout(r, 600));
+    try {
+      await Promise.all([refetch(), minDelay]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // 단일 일자 필터링 (today/tomorrow 탭은 매트릭스, week 는 Tape)
   const singleDayRows = useMemo(() => {
     if (tab === 'week') return rows;
@@ -106,17 +127,19 @@ function BoardClient() {
           {lastFetched && (
             <span className={`text-[11px] ${isStale ? 'text-amber-700 font-semibold' : 'text-text-tertiary'}`} data-testid="last-fetched">
               {isStale && '⚠ '}
-              {Math.floor(staleSeconds)}초 전 자동 갱신
+              {formatAgo(staleSeconds)}
               {isRealtimeOk && <span className="ml-1 text-emerald-600" title="실시간 연결 정상">● 실시간 연결됨</span>}
             </span>
           )}
           <button
-            onClick={() => refetch()}
-            className="p-2 rounded-lg border border-border hover:bg-accent"
-            aria-label="새로고침"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            aria-busy={isRefreshing}
+            aria-label={isRefreshing ? '갱신 중' : '새로고침'}
             data-testid="refresh-btn"
+            className="p-2 rounded-lg border border-border hover:bg-accent disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
           >
-            <RefreshCw className="size-4" />
+            <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
