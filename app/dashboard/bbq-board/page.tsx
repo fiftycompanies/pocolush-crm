@@ -1,13 +1,37 @@
 'use client';
 
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { Search, RefreshCw, AlertCircle } from 'lucide-react';
 import { useBBQBoard, todayKST, dateOffsetKST } from '@/lib/use-bbq-board';
 import BoardKpiCard from '@/components/admin-bbq/BoardKpiCard';
 import BoardMatrix from '@/components/admin-bbq/BoardMatrix';
 import BoardWeekTape from '@/components/admin-bbq/BoardWeekTape';
 import ReservationSidePanel from '@/components/admin-bbq/ReservationSidePanel';
+import BoardHistorySection from '@/components/admin-bbq/BoardHistorySection';
+import { createClient } from '@/lib/supabase/client';
 import type { BBQBoardRow } from '@/types';
+import type { BBQHistoryRow } from '@/lib/use-bbq-history';
+
+// BBQHistoryRow → BBQBoardRow 변환 (ReservationSidePanel 재활용 — kk Q5=1)
+function historyRowToBoard(h: BBQHistoryRow): BBQBoardRow {
+  return {
+    reservation_date: h.reservation_date,
+    slot_number: h.time_slot,
+    slot_label: h.slot_label ?? `${h.time_slot}타임`,
+    slot_start: '',
+    bbq_number: h.bbq_number,
+    bbq_name: h.bbq_name ?? '',
+    facility_active: true,
+    status: h.status,
+    member_name: h.member_name,
+    member_phone: h.member_phone,
+    party_size: h.party_size,
+    snapshotted_price: h.snapshotted_price,
+    product_name: h.product_name,
+    is_event: false,
+    reservation_id: h.reservation_id,
+  };
+}
 
 /**
  * /dashboard/bbq-board — BBQ 운영 실시간 보드
@@ -30,6 +54,17 @@ function BoardClient() {
   const [tab, setTab] = useState<Tab>('today');
   const [selectedRow, setSelectedRow] = useState<BBQBoardRow | null>(null);
   const [search, setSearch] = useState('');
+  const [facilities, setFacilities] = useState<{ number: number; name: string }[]>([]);
+
+  // 시설 목록 1회 fetch (이력 검색 시설 필터 드롭다운용)
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from('bbq_facilities')
+      .select('number, name')
+      .order('number')
+      .then(({ data }) => setFacilities((data ?? []) as { number: number; name: string }[]));
+  }, []);
 
   const { dateFrom, dateTo } = useMemo(() => {
     if (tab === 'today') return { dateFrom: todayKST(), dateTo: todayKST() };
@@ -150,6 +185,15 @@ function BoardClient() {
       ) : (
         <BoardMatrix rows={singleDayRows} onCellClick={handleCellClick} searchQuery={search} />
       )}
+
+      {/* § 예약 이력 검색 (2026-05-16 추가) */}
+      <BoardHistorySection
+        facilities={facilities}
+        onRowClick={(h) => {
+          pausePolling();
+          setSelectedRow(historyRowToBoard(h));
+        }}
+      />
 
       {/* 사이드 패널 */}
       {selectedRow && (
