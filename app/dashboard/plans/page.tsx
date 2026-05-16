@@ -5,9 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { Plus, Edit3, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Plan } from '@/types';
+import { useConfirm } from '@/components/ui/useConfirm';
 
 export default function PlansPage() {
   const supabase = createClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -54,7 +56,13 @@ export default function PlansPage() {
   };
 
   const handleDelete = async (p: Plan) => {
-    if (!confirm(`"${p.name}" 플랜을 삭제하시겠습니까?`)) return;
+    const ok = await confirm({
+      title: '플랜 삭제',
+      message: `"${p.name}" 플랜을 삭제합니다.\n되돌릴 수 없습니다.`,
+      variant: 'destructive',
+      confirmText: '삭제',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('plans').delete().eq('id', p.id);
     if (error) toast.error('삭제 실패'); else { toast.success('삭제되었습니다.'); fetchPlans(); }
   };
@@ -141,6 +149,7 @@ export default function PlansPage() {
           </tbody></table>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

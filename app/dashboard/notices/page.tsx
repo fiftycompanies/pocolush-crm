@@ -24,10 +24,12 @@ import {
 import { PUSH_RATE_LIMIT_MIN, PIN_WARNING_THRESHOLD, PUSH_MESSAGE_MAX_LEN } from '@/lib/notice-constants';
 import { SortablePinnedRow } from '@/components/admin-notices/SortablePinnedRow';
 import { DragOverlayClone } from '@/components/admin-notices/DragOverlayClone';
+import { useConfirm } from '@/components/ui/useConfirm';
 
 export default function AdminNoticesPage() {
   const { pinnedNotices, normalNotices, pinnedCount, loading, refetch } = useAdminNotices();
   const supabase = createClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [deleting, setDeleting] = useState<string | null>(null);
   const [pinning, setPinning] = useState<string | null>(null);
   const [pushConfirm, setPushConfirm] = useState<{ noticeId: string; title: string } | null>(null);
@@ -55,7 +57,13 @@ export default function AdminNoticesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('공지를 삭제하시겠습니까?')) return;
+    const ok = await confirm({
+      title: '공지 삭제',
+      message: '공지를 삭제합니다.\n되돌릴 수 없습니다.',
+      variant: 'destructive',
+      confirmText: '삭제',
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       const { error } = await supabase.from('notices').delete().eq('id', id);
@@ -423,6 +431,7 @@ export default function AdminNoticesPage() {
           rateLimitMin={PUSH_RATE_LIMIT_MIN}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

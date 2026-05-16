@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Edit3, Trash2, ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { BBQFacility } from '@/types';
+import { useConfirm } from '@/components/ui/useConfirm';
 
 interface Props {
   /** 부모가 외부에서 refresh 트리거 시 사용 (선택) */
@@ -20,6 +21,7 @@ export default function FacilitiesTable({ refreshKey = 0 }: Props) {
   const supabase = createClient();
   const [facilities, setFacilities] = useState<BBQFacility[]>([]);
   const [loading, setLoading] = useState(true);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const fetchFacilities = useCallback(async () => {
     const { data } = await supabase.from('bbq_facilities').select('*').order('number');
@@ -42,7 +44,13 @@ export default function FacilitiesTable({ refreshKey = 0 }: Props) {
   };
 
   const handleDelete = async (f: BBQFacility) => {
-    if (!confirm(`"${f.name}" 시설을 삭제하시겠습니까?`)) return;
+    const ok = await confirm({
+      title: '시설 삭제',
+      message: `"${f.name}" 시설을 삭제합니다.\n예약 이력이 있는 시설은 삭제할 수 없습니다.`,
+      variant: 'destructive',
+      confirmText: '삭제',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('bbq_facilities').delete().eq('id', f.id);
     if (error) toast.error('예약 이력이 있어 삭제할 수 없습니다.');
     else {
@@ -141,6 +149,7 @@ export default function FacilitiesTable({ refreshKey = 0 }: Props) {
           </table>
         )}
       </div>
+      {confirmDialog}
     </details>
   );
 }

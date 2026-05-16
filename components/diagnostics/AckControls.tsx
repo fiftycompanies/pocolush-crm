@@ -6,6 +6,7 @@ import { CheckCheck, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/useConfirm';
 
 function friendlyError(message: string | undefined, fallback: string) {
   if (message === 'FORBIDDEN') return '권한이 없습니다';
@@ -51,9 +52,16 @@ export function AckAllButton() {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const handleAckAll = async () => {
-    if (!confirm('미확인 에러를 모두 확인 처리할까요?')) return;
+    const ok = await confirm({
+      title: '일괄 확인 처리',
+      message: '미확인 에러를 모두 확인 처리합니다.',
+      variant: 'default',
+      confirmText: '모두 확인',
+    });
+    if (!ok) return;
     setPending(true);
     const { data, error } = await supabase.rpc('ack_all_trigger_error_logs');
     if (error) {
@@ -66,9 +74,12 @@ export function AckAllButton() {
   };
 
   return (
-    <Button variant="secondary" size="sm" onClick={handleAckAll} disabled={pending}>
-      <CheckCheck className="size-3.5" />
-      모두 확인
-    </Button>
+    <>
+      <Button variant="secondary" size="sm" onClick={handleAckAll} disabled={pending}>
+        <CheckCheck className="size-3.5" />
+        모두 확인
+      </Button>
+      {confirmDialog}
+    </>
   );
 }
