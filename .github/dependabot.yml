@@ -33,6 +33,11 @@ updates:
       - dependency-name: "react-dom"
         update-types:
           - version-update:semver-major
+      # @types/node 메이저는 Node 런타임과 1:1 매칭 (Node 20 = @types/node@20).
+      # Node 업그레이드 시 동시에 마이그.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
 
   # GitHub Actions workflow 의존성
   - package-ecosystem: github-actions
