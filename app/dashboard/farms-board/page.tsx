@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { Search, RefreshCw, Settings2, ArrowRight } from 'lucide-react';
 import { useFarmsBoard } from '@/lib/use-farms-board';
 import FarmsBoardKpi from '@/components/admin-farms/FarmsBoardKpi';
@@ -127,9 +128,19 @@ export default function FarmsBoardPage() {
       <FarmHistorySection
         zones={zones.filter((z) => z.is_operational !== false)}
         onRowClick={(row: FarmHistoryRow) => {
-          // 행 클릭 → 매트릭스에서 해당 농장 찾아 Drawer 오픈 (현재 데이터에 있을 때만)
+          // Q-A1: 매트릭스(active) 에 있는 농장만 Drawer 오픈
+          // expired/cancelled 행은 toast.info 로 안내 (silent fail 회피)
           const found = farms.find((f) => f.id === row.farm_id);
-          if (found) setSelectedFarm(found);
+          if (found) {
+            setSelectedFarm(found);
+          } else {
+            toast(
+              row.rental_status === 'expired'
+                ? '만료된 임대는 상세 보기를 제공하지 않습니다.'
+                : '취소된 임대는 상세 보기를 제공하지 않습니다.',
+              { icon: 'ℹ️' },
+            );
+          }
         }}
       />
 
