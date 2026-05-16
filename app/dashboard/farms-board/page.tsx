@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, RefreshCw, Settings2, ArrowRight } from 'lucide-react';
-import { useFarms } from '@/lib/use-data';
+import { useFarmsBoard } from '@/lib/use-farms-board';
 import FarmsBoardKpi from '@/components/admin-farms/FarmsBoardKpi';
 import FarmsBoardMatrix from '@/components/admin-farms/FarmsBoardMatrix';
 import FarmDrawer from '@/components/farms/FarmDrawer';
@@ -14,7 +14,7 @@ import type { Farm } from '@/types';
  *
  * kk 결정 (plan §12):
  * - Q1=A 신규 페이지 + 기존 /farms 보존
- * - Q2=1 useFarms 재사용 (Phase 2 RPC 마이그레이션 검토)
+ * - Q2=2 useFarmsBoard RPC 분리 (마이그 085 — 4 round trip → 1 + admin only + PIPA 1h dedup)
  * - Q3=a 라벨 "평상 현황" 단축 통일
  * - Q4=iii 만료 임박 30일 임계 (운영 미리 알림 유효)
  * - Q5=1 "관리하기 →" outlined 버튼 + Settings2 + ArrowRight
@@ -29,7 +29,7 @@ import type { Farm } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default function FarmsBoardPage() {
-  const { data: farms, zones, loading, refetch } = useFarms();
+  const { farms, zones, loading, refetch } = useFarmsBoard();
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [search, setSearch] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
