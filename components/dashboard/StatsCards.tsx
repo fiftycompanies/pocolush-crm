@@ -36,20 +36,22 @@ export default function StatsCards() {
         <p className="text-[11px] text-muted-foreground mt-1">신규 문의 대기</p>
       </Link>
 
-      {/* 미처리 관리 */}
-      <Link href="/dashboard/requests" className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer">
-        <div className="flex items-start justify-between">
-          <p className="text-xs font-medium text-muted-foreground">미처리 관리</p>
-          <div className="size-8 rounded-lg bg-orange/10 flex items-center justify-center"><AlertCircle className="size-4 text-orange-500" /></div>
-        </div>
-        <p className="text-2xl font-bold tracking-tight mt-2">{s.pendingTotal}<span className="text-sm font-normal text-muted-foreground ml-1">건</span></p>
+      {/* 미처리 관리 — 외부 Link 안에 Link 중첩 회피 (HTML invalid + hydration warning) */}
+      <div className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow">
+        <Link href="/dashboard/requests" className="block cursor-pointer">
+          <div className="flex items-start justify-between">
+            <p className="text-xs font-medium text-muted-foreground">미처리 관리</p>
+            <div className="size-8 rounded-lg bg-orange/10 flex items-center justify-center"><AlertCircle className="size-4 text-orange-500" /></div>
+          </div>
+          <p className="text-2xl font-bold tracking-tight mt-2">{s.pendingTotal}<span className="text-sm font-normal text-muted-foreground ml-1">건</span></p>
+        </Link>
         <div className="flex gap-2 mt-1 text-[11px]">
           {s.pendingBBQ > 0 && <Link href="/dashboard/requests?type=bbq&status=confirmed" className="text-red-600 hover:underline">BBQ {s.pendingBBQ}</Link>}
           {s.pendingOrders > 0 && <Link href="/dashboard/requests?type=order&status=pending" className="text-amber-600 hover:underline">스토어 {s.pendingOrders}</Link>}
           {s.pendingCoupons > 0 && <Link href="/dashboard/requests?type=coupon&status=pending" className="text-violet-600 hover:underline">쿠폰 {s.pendingCoupons}</Link>}
           {s.pendingTotal === 0 && <span className="text-muted-foreground">처리 완료</span>}
         </div>
-      </Link>
+      </div>
 
       {/* 이달 만료 */}
       <Link href="/dashboard/rentals" className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer">
