@@ -22,6 +22,16 @@ updates:
         patterns:
           - "eslint*"
           - "@eslint/*"
+      # React + React DOM 은 peer dependency 로 항상 같은 버전이어야 함
+      # (단독 PR 시 peer 충돌 → npm install 실패)
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+      # Supabase 관련도 peer 정합성 위해 묶음
+      supabase:
+        patterns:
+          - "@supabase/*"
     # major는 수동 리뷰 — PR 생성만
     ignore:
       - dependency-name: "next"
